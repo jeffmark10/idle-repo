@@ -49,9 +49,7 @@ Uma aplicação web interativa, modular e completa construída em **React** e **
 * [Node.js](https://nodejs.org/) (versão 18.x ou superior)
 * Gerenciador de pacotes `npm`, `yarn` ou `pnpm`
 
-### Passo a Passo
+📜 Licença e Créditos
+Este é um projeto feito por fãs para a comunidade de Revolution Idle.
 
-1. **Clone o repositório:**
-   ```bash
-   git clone [https://github.com/SEU-USUARIO/SEU-REPOSITORIO.git](https://github.com/SEU-USUARIO/SEU-REPOSITORIO.git)
-   cd SEU-REPOSITORIO
+Fórmulas e estratégias baseadas nas documentações e roteiros da comunidade oficial no Discord e Wiki oficial.
