@@ -2,71 +2,114 @@ import React, { createContext, useContext, useState, useEffect } from "react";
 
 const GameContext = createContext();
 
-const STORAGE_KEY = "REVOLUTION_IDLE_USER_STATE_V1";
+const STORAGE_KEY = "REVOLUTION_IDLE_GLOBAL_STATE_V2";
+
+// Lista de chaves legadas a serem purgadas do localStorage
+const LEGACY_STORAGE_KEYS = [
+  "REVOLUTION_IDLE_USER_STATE_V1",
+  "rev_score",
+  "checkedTasks",
+  "sim_mineralGrid",
+  "sim_planetPreset",
+  "sim_node1Lvl",
+  "sim_singNodes",
+  "pigCount",
+  "pipTotal",
+  "erList",
+  "infProgress"
+];
 
 const INITIAL_STATE = {
   profile: {
-    name: "Jogador",
-    currentLayer: "revolution", // revolution | infinity | eternity | unity | plague
+    currentTab: "revo", // revo | infinity | eternity | dilation | macros | unity | minerals | tarot | plague | singularity
+    searchQuery: "",
     autoSave: true
   },
   stats: {
     score: "1e10",
+    promoLevel: 10,
     ip: "0",
     ep: "0",
     dp: "0",
     eternities: 1,
     supernovas: 0,
-    promoLevel: 10,
     stars: 1,
     starBaseUpgrades: 0,
-    lab: { base: 1, mult: 1, power: 1 },
-    rpAllocations: { ipGain: 0, ascPower: 0, starBase: 0, epGain: 0, genPower: 0, commonExp: 0 }
+    lab: { base: 10, mult: 10, power: 10 },
+    rpAllocations: {
+      ipGain: 0,
+      ascPower: 0,
+      starBase: 0,
+      epGain: 0,
+      genPower: 0,
+      commonExp: 0
+    }
   },
-  // Persistência da Praga e desbloqueios
-  plague: {
-    isActive: false,
-    infectedColors: [],
-    dnaPoints: 0,
-    mutations: {}
-  },
-  completedTasks: {}, // { "IC1": true, "EC1-1": true, "ACH_005": true }
+  completedTasks: {}, // Armazena ICs ("IC1"), ECs ("EC1-1"), Conquistas ("ACH_005")
   dilationTreeAllocations: { "C-1": 1 },
   savedLoadouts: {}
 };
 
 export function GameProvider({ children }) {
   const [gameState, setGameState] = useState(() => {
+    // 1. Limpeza de chaves legadas isoladas
+    LEGACY_STORAGE_KEYS.forEach(k => localStorage.removeItem(k));
+
+    // 2. Carregamento do estado unificado
     const saved = localStorage.getItem(STORAGE_KEY);
     if (saved) {
       try {
-        return { ...INITIAL_STATE, ...JSON.parse(saved) };
+        const parsed = JSON.parse(saved);
+        return {
+          ...INITIAL_STATE,
+          ...parsed,
+          profile: { ...INITIAL_STATE.profile, ...parsed.profile },
+          stats: { ...INITIAL_STATE.stats, ...parsed.stats },
+          completedTasks: { ...parsed.completedTasks },
+          dilationTreeAllocations: { ...INITIAL_STATE.dilationTreeAllocations, ...parsed.dilationTreeAllocations }
+        };
       } catch (e) {
-        console.error("Falha ao carregar save:", e);
+        console.error("Erro ao carregar dados locais, restaurando padrão:", e);
       }
     }
     return INITIAL_STATE;
   });
 
+  // Persistência automática no localStorage
   useEffect(() => {
     if (gameState.profile.autoSave) {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(gameState));
     }
   }, [gameState]);
 
-  // Atualização genérica de estado
-  const updateStat = (category, field, value) => {
-    setGameState((prev) => ({
+  // Atualizador Atômico de Estatísticas
+  const updateStat = (key, value) => {
+    setGameState(prev => ({
       ...prev,
-      [category]: typeof field === "object" 
-        ? { ...prev[category], ...field }
-        : { ...prev[category], [field]: value }
+      stats: {
+        ...prev.stats,
+        [key]: value
+      }
     }));
   };
 
-  // Alternar conclusão de Checklist / Desafio
+  // Atualizador de Objetos Aninhados (ex: Lab)
+  const updateNestedStat = (category, key, value) => {
+    setGameState(prev => ({
+      ...prev,
+      stats: {
+        ...prev.stats,
+        [category]: {
+          ...prev.stats[category],
+          [key]: value
+        }
+      }
+    }));
+  };
+
+  // Alternar conclusão de tarefas/desafios
   const toggleTask = (taskId) => {
-    setGameState((prev) => ({
+    setGameState(prev => ({
       ...prev,
       completedTasks: {
         ...prev.completedTasks,
@@ -75,39 +118,82 @@ export function GameProvider({ children }) {
     }));
   };
 
-  // Motor de Reset com Cascata Hierárquica
-  const executePrestigeReset = (layerType) => {
-    setGameState((prev) => {
-      const draft = structuredClone(prev);
-
-      if (layerType === "prestige") {
-        // Reseta círculos, mas mantém promoções e conquistas
-        draft.stats.score = "0";
-      } else if (layerType === "infinity") {
-        // Reseta Revolução e Prestige
-        draft.stats.score = "0";
-        draft.stats.promoLevel = 1;
-      } else if (layerType === "eternity") {
-        // Reseta Infinity, Árvore de IP e Geradores (mantém marcos de ET e automações salvas)
-        draft.stats.score = "0";
-        draft.stats.ip = "0";
-        draft.stats.stars = 1;
-        draft.stats.starBaseUpgrades = 0;
-        draft.stats.eternities += 1;
-      }
-
-      return draft;
+  // Alocação de DTP na Árvore de Dilatação
+  const updateDtpAllocation = (nodeId, delta) => {
+    setGameState(prev => {
+      const current = prev.dilationTreeAllocations[nodeId] || 0;
+      const next = Math.max(0, Math.min(5, current + delta));
+      return {
+        ...prev,
+        dilationTreeAllocations: {
+          ...prev.dilationTreeAllocations,
+          [nodeId]: next
+        }
+      };
     });
+  };
+
+  // Aplicar Preset de Dilatação
+  const applyDtpPreset = (presetCode) => {
+    const parts = presetCode.split(";");
+    const newAlloc = {};
+    parts.forEach(p => {
+      const type = p[0];
+      const rest = p.substring(1);
+      if (type === "C") {
+        newAlloc["C-1"] = parseInt(rest, 10) || 0;
+      } else {
+        const nums = rest.split(",").map(n => parseInt(n, 10) || 0);
+        nums.forEach((val, idx) => {
+          newAlloc[`${type}-${idx + 1}`] = val;
+        });
+      }
+    });
+
+    setGameState(prev => ({
+      ...prev,
+      dilationTreeAllocations: newAlloc
+    }));
+  };
+
+  // Respec da Árvore de Dilatação
+  const respecDilationTree = () => {
+    setGameState(prev => ({
+      ...prev,
+      dilationTreeAllocations: { "C-1": 1 }
+    }));
+  };
+
+  // Mudança de Aba Ativa
+  const setCurrentTab = (tabId) => {
+    setGameState(prev => ({
+      ...prev,
+      profile: {
+        ...prev.profile,
+        currentTab: tabId
+      }
+    }));
+  };
+
+  // RESET GLOBAL COMPLETO (Purga 100% do estado e storage)
+  const resetAllData = () => {
+    localStorage.removeItem(STORAGE_KEY);
+    LEGACY_STORAGE_KEYS.forEach(k => localStorage.removeItem(k));
+    setGameState(INITIAL_STATE);
   };
 
   return (
     <GameContext.Provider
       value={{
         gameState,
-        setGameState,
         updateStat,
+        updateNestedStat,
         toggleTask,
-        executePrestigeReset
+        updateDtpAllocation,
+        applyDtpPreset,
+        respecDilationTree,
+        setCurrentTab,
+        resetAllData
       }}
     >
       {children}
@@ -117,6 +203,8 @@ export function GameProvider({ children }) {
 
 export function useGame() {
   const context = useContext(GameContext);
-  if (!context) throw new Error("useGame deve ser usado dentro de GameProvider");
+  if (!context) {
+    throw new Error("useGame deve ser utilizado dentro de um GameProvider.");
+  }
   return context;
 }
