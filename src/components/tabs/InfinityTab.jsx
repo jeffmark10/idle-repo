@@ -5,9 +5,10 @@ import {
 } from "lucide-react";
 import StatCard from "../ui/StatCard";
 import { INFINITY_CHALLENGES } from "../../data/gameData";
+import { INFINITY_FORMULAS } from "../../data/gameEngine";
 import { parseIncrementalNumber, formatScientific } from "../../utils/numberParser";
+import { useGame } from "../../context/GameContext";
 
-// Dados da Rota de Upgrades do Infinito (1 a 41)
 const INFINITY_TREE_PATH = [
   { step: 1, id: "[1;1]", name: "Autocompra de Cores", cost: "1 IP" },
   { step: 2, id: "[2;2]", name: "Autocompra de Ascensões", cost: "1 IP" },
@@ -52,21 +53,17 @@ const INFINITY_TREE_PATH = [
   { step: 41, id: "[20;2]", name: "GP Booster Final", cost: "1e27 IP" }
 ];
 
-export default function InfinityTab({ 
-  checkedTasks, 
-  onToggleCheck, 
-  starCount, 
-  onStarCountChange, 
-  starBasePurchases, 
-  onStarBasePurchasesChange 
-}) {
+export default function InfinityTab() {
+  const { gameState, updateStat, toggleTask } = useGame();
   const [subPage, setSubPage] = useState("start");
 
-  // Estados locais para digitação livre (suporta texto puro e notação científica)
+  const starCount = gameState.stats.stars;
+  const starBasePurchases = gameState.stats.starBaseUpgrades;
+  const checkedTasks = gameState.completedTasks;
+
   const [starCountInput, setStarCountInput] = useState(String(starCount));
   const [starBaseInput, setStarBaseInput] = useState(String(starBasePurchases));
 
-  // Parsers numéricos seguros
   const parsedStarCount = useMemo(() => {
     const res = parseIncrementalNumber(starCountInput);
     return res.isValid ? Math.max(0, res.value) : Number(starCount) || 0;
@@ -77,31 +74,17 @@ export default function InfinityTab({
     return res.isValid ? Math.max(0, res.value) : Number(starBasePurchases) || 0;
   }, [starBaseInput, starBasePurchases]);
 
-  // Fórmulas Oficiais de Estrelas (wiki.gg) com suporte a números gigantes
-  const starBase = 2.75 + 0.275 * parsedStarBase;
-  const starExp = 0.45 + 0.05 * 1;
-  
-  const stardustGain = useMemo(() => {
-    if (parsedStarCount > 1000) {
-      // Cálculo logarítmico para evitar Infinity prematuro em JS
-      const log10Gain = Math.log10(0.05) + parsedStarCount * Math.log10(starBase);
-      if (log10Gain > 308) return Infinity;
-      return 0.05 * Math.pow(starBase, parsedStarCount);
-    }
-    return 0.05 * Math.pow(starBase, parsedStarCount);
-  }, [starBase, parsedStarCount]);
-
-  const generatorMult = useMemo(() => {
-    if (stardustGain === Infinity) return Infinity;
-    return Math.pow(stardustGain, starExp);
-  }, [stardustGain, starExp]);
+  // Fórmulas Centrais de Poeira Estelar
+  const { base: starBase, stardustGain, genMult: generatorMult } = useMemo(() => {
+    return INFINITY_FORMULAS.calcStardust(parsedStarCount, parsedStarBase);
+  }, [parsedStarCount, parsedStarBase]);
 
   const updateStarCount = (val) => {
     const clean = String(val);
     setStarCountInput(clean);
     const parsed = parseIncrementalNumber(clean);
-    if (parsed.isValid && onStarCountChange) {
-      onStarCountChange(parsed.value);
+    if (parsed.isValid) {
+      updateStat("stars", parsed.value);
     }
   };
 
@@ -109,8 +92,8 @@ export default function InfinityTab({
     const clean = String(val);
     setStarBaseInput(clean);
     const parsed = parseIncrementalNumber(clean);
-    if (parsed.isValid && onStarBasePurchasesChange) {
-      onStarBasePurchasesChange(parsed.value);
+    if (parsed.isValid) {
+      updateStat("starBaseUpgrades", parsed.value);
     }
   };
 
@@ -143,14 +126,14 @@ export default function InfinityTab({
         })}
       </div>
 
-      {/* 1. COMEÇANDO & ÁRVORE DE UPGRADES COMPLETA */}
+      {/* 1. COMEÇANDO & ROTA */}
       {subPage === "start" && (
         <div className="space-y-6">
           <div className="p-5 rounded-2xl bg-purple-950/20 border border-purple-500/30">
             <span className="text-xs font-mono uppercase text-purple-400 font-bold tracking-wider">Infinity • Página 1 de 4</span>
             <h2 className="text-xl font-bold text-white mt-1">Primeiro Infinito & Rota Ótima da Árvore</h2>
             <p className="text-xs text-zinc-400 mt-1 leading-relaxed">
-              O primeiro Infinito exige <strong>1.79e308 de Pontuação (Score ⵙ)</strong> e você deve alcançar cerca de <strong>1e42 (1 TDC) de Prestígio</strong> antes do salto final.
+              O primeiro Infinito exige <strong>1.79e308 de Pontuação (Score ⵙ)</strong> e cerca de <strong>1e42 (1 TDC) de Prestígio</strong> antes do salto final.
             </p>
           </div>
 
@@ -185,21 +168,16 @@ export default function InfinityTab({
 
               <div className="p-3 bg-zinc-950 rounded-xl border border-zinc-800 font-mono text-[11px] space-y-1 text-zinc-300">
                 <div>• GP = 16 → 16^0.666 ≈ <strong>6.35x de Multiplicador</strong></div>
-                <div>• Se o ganho base era 30 Red Mult, agora é: 30 × 6.35 ≈ <strong>190 Mult</strong></div>
+                <div>• Se o ganho base era 30 Red Mult: 30 × 6.35 ≈ <strong>190 Mult</strong></div>
                 <div>• Cada compra de gerador multiplica seu intervalo em <strong>2x</strong>.</div>
                 <div>• Limite máximo do Multiplicador de Geradores: <strong>1e1.000</strong>.</div>
-              </div>
-
-              <div className="p-3.5 bg-zinc-950 rounded-xl border border-purple-500/30 text-[11px] text-zinc-300 space-y-1 font-sans">
-                <strong className="text-purple-300 block font-mono">Cadeia Ascendente de Geradores:</strong>
-                <p>G2 produz G1 → G3 produz G2 → G4 produz G3 → G5 produz G4.</p>
               </div>
             </div>
           </div>
         </div>
       )}
 
-      {/* 2. AUTOMAÇÃO RECOMENDADA & GUIA DA CONQUISTA #029 */}
+      {/* 2. AUTOMAÇÃO & CONQUISTA #029 */}
       {subPage === "post" && (
         <div className="space-y-6">
           <div className="p-5 rounded-2xl bg-purple-950/20 border border-purple-500/30">
@@ -283,85 +261,18 @@ export default function InfinityTab({
         </div>
       )}
 
-      {/* 3. TABELA DOS 9 DESAFIOS (IC1 A IC9) & ROTEIRO RECOMENDADO */}
+      {/* 3. DESAFIOS (IC1 A IC9) */}
       {subPage === "challenges" && (
         <div className="space-y-6">
           <div className="p-5 rounded-2xl bg-purple-950/20 border border-purple-500/30">
             <span className="text-xs font-mono uppercase text-purple-400 font-bold tracking-wider">Infinity • Página 3 de 4</span>
             <h2 className="text-xl font-bold text-white mt-1">Desafios do Infinito (IC1 a IC9)</h2>
             <p className="text-xs text-zinc-400 mt-1 leading-relaxed">
-              Os desafios são liberados após comprar o upgrade <strong>7;1</strong> da árvore. O objetivo é alcançar Infinity sob certas limitações. Cada desafio concluído concede <strong>+1x no ganho total de IP</strong> (+10x no total). Clique 3 vezes em um desafio para ativá-lo.
+              Os desafios são liberados após comprar o upgrade <strong>7;1</strong> da árvore. Cada desafio concluído concede <strong>+1x no ganho total de IP</strong> (+10x no total).
             </p>
           </div>
 
-          <div className="p-5 rounded-2xl bg-zinc-900/40 border border-zinc-800 space-y-4">
-            <h3 className="text-sm font-bold text-white flex items-center gap-2">
-              <Trophy className="w-4 h-4 text-yellow-400" /> Roteiro Recomendado para Completar os Desafios
-            </h3>
-            <div className="overflow-x-auto">
-              <table className="w-full text-left font-mono text-xs text-zinc-300">
-                <thead className="border-b border-zinc-800 text-zinc-500 uppercase">
-                  <tr>
-                    <th className="py-2.5">Desafio</th>
-                    <th className="py-2.5">Quando Fazer</th>
-                    <th className="py-2.5">Requisitos / Observações</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-zinc-800/60">
-                  <tr className="hover:bg-zinc-800/30 transition-colors">
-                    <td className="py-2 font-bold text-purple-400">Desafio 1</td>
-                    <td className="py-2">Assim que liberar os desafios.</td>
-                    <td className="py-2 text-zinc-400">—</td>
-                  </tr>
-                  <tr className="hover:bg-zinc-800/30 transition-colors">
-                    <td className="py-2 font-bold text-purple-400">Desafio 2</td>
-                    <td className="py-2">Logo após terminar o 1.</td>
-                    <td className="py-2 text-zinc-400">—</td>
-                  </tr>
-                  <tr className="hover:bg-zinc-800/30 transition-colors">
-                    <td className="py-2 font-bold text-purple-400">Desafio 3</td>
-                    <td className="py-2">Após pegar melhorias até a coluna 8 da árvore.</td>
-                    <td className="py-2 text-emerald-400">G1 nível 2</td>
-                  </tr>
-                  <tr className="hover:bg-zinc-800/30 transition-colors">
-                    <td className="py-2 font-bold text-purple-400">Desafio 4</td>
-                    <td className="py-2">Depois do 3.</td>
-                    <td className="py-2 text-emerald-400">1 nível no G2 (Coluna 9 da árvore acelera)</td>
-                  </tr>
-                  <tr className="hover:bg-zinc-800/30 transition-colors">
-                    <td className="py-2 font-bold text-purple-400">Desafio 5</td>
-                    <td className="py-2">Imediatamente após o 4.</td>
-                    <td className="py-2 text-zinc-400">—</td>
-                  </tr>
-                  <tr className="hover:bg-zinc-800/30 transition-colors">
-                    <td className="py-2 font-bold text-purple-400">Desafio 6</td>
-                    <td className="py-2">Imediatamente após o 5.</td>
-                    <td className="py-2 text-zinc-400">—</td>
-                  </tr>
-                  <tr className="hover:bg-zinc-800/30 transition-colors">
-                    <td className="py-2 font-bold text-purple-400">Desafio 7</td>
-                    <td className="py-2">Após pegar melhorias até a coluna 13 da árvore.</td>
-                    <td className="py-2 text-emerald-400">G1 nível 3</td>
-                  </tr>
-                  <tr className="hover:bg-zinc-800/30 transition-colors">
-                    <td className="py-2 font-bold text-purple-400">Desafio 8</td>
-                    <td className="py-2">Após pegar melhorias até a coluna 14 da árvore.</td>
-                    <td className="py-2 text-emerald-400">G1 nível 4</td>
-                  </tr>
-                  <tr className="hover:bg-zinc-800/30 transition-colors">
-                    <td className="py-2 font-bold text-purple-400">Desafio 9</td>
-                    <td className="py-2">Logo depois do 8.</td>
-                    <td className="py-2 text-zinc-400">—</td>
-                  </tr>
-                </tbody>
-              </table>
-            </div>
-          </div>
-
           <div className="space-y-3">
-            <h3 className="text-sm font-bold text-white flex items-center gap-2">
-              <Check className="w-4 h-4 text-purple-400" /> Marcar Desafios Concluídos
-            </h3>
             {INFINITY_CHALLENGES.map((ic) => {
               const isDone = !!checkedTasks[ic.id];
               return (
@@ -369,8 +280,8 @@ export default function InfinityTab({
                   key={ic.id}
                   role="checkbox"
                   aria-checked={isDone}
-                  onClick={() => onToggleCheck(ic.id)}
-                  className={`w-full text-left p-4 rounded-xl border flex flex-col sm:flex-row sm:items-center justify-between gap-3 transition-all focus:outline-none focus:ring-1 focus:ring-purple-400 ${
+                  onClick={() => toggleTask(ic.id)}
+                  className={`w-full text-left p-4 rounded-xl border flex flex-col sm:flex-row sm:items-center justify-between gap-3 transition-all focus:outline-none ${
                     isDone
                       ? "bg-purple-950/30 border-purple-500/40 text-zinc-400"
                       : "bg-zinc-950 border-zinc-800 hover:border-zinc-700 text-zinc-200"
@@ -400,7 +311,7 @@ export default function InfinityTab({
         </div>
       )}
 
-      {/* 4. QUEBRANDO O INFINITO, LONG RUNS & ESTRELAS */}
+      {/* 4. POEIRA ESTELAR & SIMULADOR */}
       {subPage === "break" && (
         <div className="space-y-6">
           <div className="p-5 rounded-2xl bg-purple-950/20 border border-purple-500/30">
@@ -419,94 +330,18 @@ export default function InfinityTab({
             <div className="lg:col-span-7 space-y-4">
               <div className="p-5 rounded-2xl bg-zinc-900/40 border border-zinc-800 space-y-3">
                 <h3 className="text-sm font-bold text-white flex items-center gap-2">
-                  <Clock className="w-4 h-4 text-cyan-400" /> Roteiro de Long Runs & Otimização de Desafios
+                  <Clock className="w-4 h-4 text-cyan-400" /> Roteiro de Long Runs
                 </h3>
-
-                <div className="space-y-2.5 text-xs text-zinc-300 font-sans">
-                  <div className="p-3 bg-zinc-950 rounded-xl border border-zinc-800 space-y-1">
-                    <span className="text-cyan-400 font-bold font-mono block">⚡ A Arma Secreta (Tempos Baixos):</span>
-                    <p className="text-zinc-400 text-[11px] leading-relaxed">
-                      Os upgrades <strong>15;2-4</strong>, <strong>16;3</strong> e <strong>17;2</strong> escalam com a soma total do tempo de todos os desafios. Quanto menor o tempo somado, maior o multiplicador global.
-                    </p>
-                  </div>
-
-                  <div className="space-y-1.5 font-mono text-[11px]">
-                    <div className="flex items-start gap-2">
-                      <span className="text-purple-400 font-bold shrink-0">• Rumo à Coluna 17:</span>
-                      <span className="text-zinc-400">Soma dos desafios &lt; 5 min. Runs de 10 a 40 min com Auto Prestígio em 1e6.</span>
-                    </div>
-                    <div className="flex items-start gap-2">
-                      <span className="text-purple-400 font-bold shrink-0">• Coluna 18:</span>
-                      <span className="text-zinc-400">Soma dos desafios ~40s. Farm de 500B (5e11) IP.</span>
-                    </div>
-                    <div className="flex items-start gap-2">
-                      <span className="text-purple-400 font-bold shrink-0">• Coluna 19 & G5:</span>
-                      <span className="text-zinc-400">Soma dos desafios &lt; 30s. Runs longas de 5T a 20T IP.</span>
-                    </div>
-                    <div className="flex items-start gap-2">
-                      <span className="text-amber-400 font-bold shrink-0">• 1ª Estrela ⭐ (Upgrade 21;1):</span>
-                      <span className="text-zinc-300 font-bold">Junte exatamente 2e33 (2 Dc) IP antes de resetar para comprar o upgrade 21;1 e a Estrela juntos.</span>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              <div className="p-5 rounded-2xl bg-zinc-900/40 border border-zinc-800 space-y-3">
-                <div className="flex items-center justify-between">
-                  <h3 className="text-sm font-bold text-white flex items-center gap-2">
-                    <Sparkles className="w-4 h-4 text-yellow-400" /> Prioridade de Poeira Estelar (PE)
-                  </h3>
-                  <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-purple-950 border border-purple-500/40 text-purple-300">
-                    Ordem: 1 → 3 → 2 → 4
-                  </span>
-                </div>
-
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 font-mono text-xs">
-                  <div className="p-3 bg-zinc-950 rounded-xl border border-zinc-800 space-y-1">
-                    <div className="flex items-center justify-between text-yellow-400 font-bold text-[11px]">
-                      <span>1º [1;1] Alcance</span>
-                      <span className="text-[10px] px-1.5 py-0.2 rounded bg-yellow-950/60 border border-yellow-500/30">Top 1</span>
-                    </div>
-                    <p className="text-[11px] text-zinc-400 font-sans">
-                      Faz o upgrade 1;1 cobrir G2, G3 até G10. É o upgrade mais forte da camada.
-                    </p>
-                  </div>
-
-                  <div className="p-3 bg-zinc-950 rounded-xl border border-zinc-800 space-y-1">
-                    <div className="flex items-center justify-between text-zinc-200 font-bold text-[11px]">
-                      <span>2º [2;1] Expoente</span>
-                      <span className="text-[10px] text-zinc-500">Máx +0.5</span>
-                    </div>
-                    <p className="text-[11px] text-zinc-400 font-sans">
-                      Concede +0.01 ao expoente de score por compra, aumentando o crescimento final.
-                    </p>
-                  </div>
-
-                  <div className="p-3 bg-zinc-950 rounded-xl border border-zinc-800 space-y-1">
-                    <div className="flex items-center justify-between text-zinc-200 font-bold text-[11px]">
-                      <span>3º Ganho Infinito</span>
-                      <span className="text-[10px] text-emerald-400 font-sans">Sem Limite</span>
-                    </div>
-                    <p className="text-[11px] text-zinc-400 font-sans">
-                      Multiplica o ganho de IP (+1x por compra). Ótimo para runs estendidas.
-                    </p>
-                  </div>
-
-                  <div className="p-3 bg-zinc-950 rounded-xl border border-zinc-800 space-y-1">
-                    <div className="flex items-center justify-between text-zinc-200 font-bold text-[11px]">
-                      <span>4º [18;1] Velocidade</span>
-                      <span className="text-[10px] text-zinc-500">Máx 62.62x</span>
-                    </div>
-                    <p className="text-[11px] text-zinc-400 font-sans">
-                      Aumenta a velocidade do gerador passivo de Infinitos do upgrade 18;1.
-                    </p>
-                  </div>
+                <div className="space-y-1.5 font-mono text-[11px] text-zinc-300">
+                  <div>• Rumo à Coluna 17: Soma dos desafios &lt; 5 min. Auto Prestígio em 1e6.</div>
+                  <div>• Coluna 18: Soma dos desafios ~40s. Farm de 500B (5e11) IP.</div>
+                  <div>• Coluna 19 & G5: Soma dos desafios &lt; 30s. Runs longas de 5T a 20T IP.</div>
+                  <div>• 1ª Estrela ⭐: Junte exatamente 2e33 (2 Dc) IP antes de resetar.</div>
                 </div>
               </div>
             </div>
 
-            {/* Coluna Direita: Simulador Interativo com Inputs Livres Sem Limite */}
-            <div className="lg:col-span-5 p-6 rounded-3xl bg-gradient-to-b from-purple-950/30 via-zinc-900/60 to-zinc-950 border-2 border-purple-500/40 shadow-2xl shadow-purple-950/40 space-y-6">
+            <div className="lg:col-span-5 p-6 rounded-3xl bg-gradient-to-b from-purple-950/30 via-zinc-900/60 to-zinc-950 border-2 border-purple-500/40 shadow-2xl space-y-6">
               <div className="flex items-center justify-between border-b border-purple-500/20 pb-4">
                 <h3 className="text-base sm:text-lg font-extrabold text-white flex items-center gap-2.5">
                   <Sparkles className="w-5 h-5 text-yellow-400 animate-pulse" /> Simulador de Poeira Estelar
@@ -517,7 +352,6 @@ export default function InfinityTab({
               </div>
 
               <div className="space-y-5 font-mono">
-                {/* Campo 1: Estrelas Compradas */}
                 <div className="p-4 rounded-2xl bg-zinc-950/80 border border-zinc-800 space-y-3">
                   <div className="flex justify-between items-center text-xs sm:text-sm text-zinc-300">
                     <label htmlFor="starCountInputEl" className="font-bold flex items-center gap-1.5">
@@ -528,17 +362,14 @@ export default function InfinityTab({
                     </span>
                   </div>
 
-                  {/* Input Manual Livre */}
                   <input
                     id="starCountInputEl"
                     type="text"
                     value={starCountInput}
                     onChange={(e) => updateStarCount(e.target.value)}
-                    placeholder="Ex: 20, 500k, 1e5, 1e12"
-                    className="w-full bg-zinc-900 border border-purple-500/40 rounded-xl px-3 py-2 text-sm text-white font-mono focus:border-purple-400 focus:outline-none"
+                    className="w-full bg-zinc-900 border border-purple-500/40 rounded-xl px-3 py-2 text-sm text-white font-mono focus:outline-none"
                   />
 
-                  {/* Botões Rápidos */}
                   <div className="flex gap-1.5 flex-wrap pt-1">
                     {[1, 5, 10, 20, 50, 100, 500, "1k"].map((v) => (
                       <button
@@ -550,19 +381,8 @@ export default function InfinityTab({
                       </button>
                     ))}
                   </div>
-
-                  {/* Slider de Escala Dinâmica */}
-                  <input
-                    type="range"
-                    min="1"
-                    max={Math.max(100, Math.min(1000, parsedStarCount > 100 ? parsedStarCount * 1.5 : 100))}
-                    value={Math.min(1000, parsedStarCount)}
-                    onChange={(e) => updateStarCount(Number(e.target.value))}
-                    className="w-full h-2 rounded-lg bg-zinc-800 accent-purple-500 cursor-pointer mt-1"
-                  />
                 </div>
 
-                {/* Campo 2: Upgrades de Base Estelar */}
                 <div className="p-4 rounded-2xl bg-zinc-950/80 border border-zinc-800 space-y-3">
                   <div className="flex justify-between items-center text-xs sm:text-sm text-zinc-300">
                     <label htmlFor="starBaseInputEl" className="font-bold flex items-center gap-1.5">
@@ -573,42 +393,16 @@ export default function InfinityTab({
                     </span>
                   </div>
 
-                  {/* Input Manual Livre */}
                   <input
                     id="starBaseInputEl"
                     type="text"
                     value={starBaseInput}
                     onChange={(e) => updateStarBase(e.target.value)}
-                    placeholder="Ex: 10, 50, 100, 1000"
-                    className="w-full bg-zinc-900 border border-purple-500/40 rounded-xl px-3 py-2 text-sm text-white font-mono focus:border-purple-400 focus:outline-none"
-                  />
-
-                  {/* Botões Rápidos */}
-                  <div className="flex gap-1.5 flex-wrap pt-1">
-                    {[0, 5, 10, 25, 50, 100, 250, 500].map((v) => (
-                      <button
-                        key={v}
-                        onClick={() => updateStarBase(v)}
-                        className="px-2 py-1 rounded-lg bg-zinc-900 hover:bg-purple-900/40 text-[10px] text-zinc-300 border border-zinc-800 transition-colors"
-                      >
-                        {v}
-                      </button>
-                    ))}
-                  </div>
-
-                  {/* Slider de Escala Dinâmica */}
-                  <input
-                    type="range"
-                    min="0"
-                    max={Math.max(50, Math.min(500, parsedStarBase > 50 ? parsedStarBase * 1.5 : 50))}
-                    value={Math.min(500, parsedStarBase)}
-                    onChange={(e) => updateStarBase(Number(e.target.value))}
-                    className="w-full h-2 rounded-lg bg-zinc-800 accent-purple-500 cursor-pointer mt-1"
+                    className="w-full bg-zinc-900 border border-purple-500/40 rounded-xl px-3 py-2 text-sm text-white font-mono focus:outline-none"
                   />
                 </div>
               </div>
 
-              {/* Cards de Resultados */}
               <div className="grid grid-cols-1 gap-3 font-mono">
                 <div className="p-4 rounded-2xl bg-zinc-950 border border-purple-500/30 flex items-center justify-between shadow-inner">
                   <span className="text-xs sm:text-sm text-zinc-400 font-bold">Ganho de SD Estimado:</span>
@@ -622,16 +416,6 @@ export default function InfinityTab({
                     x{formatScientific(generatorMult)}
                   </strong>
                 </div>
-              </div>
-
-              {/* Banner Rumo à Eternidade */}
-              <div className="p-5 bg-gradient-to-br from-purple-950/80 via-indigo-950/50 to-zinc-950 rounded-2xl border-2 border-purple-500/40 text-zinc-200 space-y-2 font-sans shadow-xl">
-                <div className="text-sm sm:text-base font-extrabold text-white flex items-center gap-2">
-                  <span className="text-lg">🎯</span> Rumo à Eternidade
-                </div>
-                <p className="text-xs text-zinc-300 leading-relaxed">
-                  Acumule <strong className="text-emerald-400 font-mono text-sm">1.79e308 Pontos de Infinito (IP)</strong> para que o botão <strong className="text-purple-300 font-mono">"Eternate"</strong> apareça acima do botão de Infinito, destravando Animais, Laboratório e Supernovas!
-                </p>
               </div>
             </div>
           </div>

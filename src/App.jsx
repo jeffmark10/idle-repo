@@ -1,21 +1,18 @@
-import React, { useState } from "react";
-import { 
-  RotateCcw, Search, Sparkles, Trophy, 
-  Settings, Code, Trash2, AlertTriangle, X
-} from "lucide-react";
+import React, { useState, useMemo } from "react";
+import { Search, Trash2, AlertTriangle, ShieldCheck } from "lucide-react";
 import { useGame } from "./context/GameContext";
 
-// Abas Ativas
+// Abas Ativas Principais
 import RevolutionTab from "./components/tabs/RevolutionTab";
 import InfinityTab from "./components/tabs/InfinityTab";
 import EternityTab from "./components/tabs/EternityTab";
+import DilationTab from "./components/tabs/DilationTab";
 import MacrosTab from "./components/tabs/MacrosTab";
 
-// Componente para as Abas Desativadas Temporariamente
+// Placeholder Padronizado para Abas Futuras
 import ComingSoonTab from "./components/tabs/ComingSoonTab";
 
-// Definição da Navegação
-const NAVIGATION_ITEMS = [
+export const TABS_CONFIG = [
   { id: "revo", label: "Revolução", icon: "ⵙ", layer: "Camada 1 • Base" },
   { id: "infinity", label: "Infinito", icon: "∞", layer: "Camada 2 • IP" },
   { id: "eternity", label: "Eternidade", icon: "⧖", layer: "Camada 3 • EP" },
@@ -29,23 +26,26 @@ const NAVIGATION_ITEMS = [
 ];
 
 export default function App() {
-  const { gameState, setCurrentTab, resetAllData, updateStat, toggleTask } = useGame();
+  const { gameState, setCurrentTab, resetAllData } = useGame();
   const [searchQuery, setSearchQuery] = useState("");
   const [showResetModal, setShowResetModal] = useState(false);
 
   const activeTab = gameState.profile.currentTab;
 
-  // Filtragem rápida de abas pela busca
-  const filteredNav = NAVIGATION_ITEMS.filter(item => 
-    item.label.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    item.layer.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  // Filtra apenas as abas ativas e relevantes pela busca
+  const filteredNav = useMemo(() => {
+    if (!searchQuery.trim()) return TABS_CONFIG;
+    const query = searchQuery.toLowerCase();
+    return TABS_CONFIG.filter(item => 
+      item.label.toLowerCase().includes(query) ||
+      item.layer.toLowerCase().includes(query)
+    );
+  }, [searchQuery]);
 
   return (
     <div className="min-h-screen bg-zinc-950 text-zinc-100 flex flex-col md:flex-row font-sans selection:bg-purple-600 selection:text-white">
       {/* Sidebar Lateral */}
       <aside className="w-full md:w-64 bg-zinc-950 border-r border-zinc-800 flex flex-col shrink-0">
-        {/* Header da Barra Lateral */}
         <div className="p-4 border-b border-zinc-800/80 flex items-center justify-between">
           <div className="flex items-center gap-2.5">
             <div className="w-8 h-8 rounded-xl bg-purple-600/20 border border-purple-500/30 flex items-center justify-center text-purple-400 font-black text-sm">
@@ -58,7 +58,7 @@ export default function App() {
           </div>
         </div>
 
-        {/* Campo de Busca Simples */}
+        {/* Barra de Busca */}
         <div className="p-3 border-b border-zinc-800/60">
           <div className="relative">
             <Search className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-zinc-500" />
@@ -72,7 +72,7 @@ export default function App() {
           </div>
         </div>
 
-        {/* Lista de Navegação */}
+        {/* Navegação */}
         <nav className="p-2 space-y-1 overflow-y-auto flex-1 font-mono text-xs">
           {filteredNav.map((item) => {
             const isActive = activeTab === item.id;
@@ -106,7 +106,7 @@ export default function App() {
           })}
         </nav>
 
-        {/* Botão de Reset Total no Rodapé da Sidebar */}
+        {/* Reset Global */}
         <div className="p-3 border-t border-zinc-800/80">
           <button
             onClick={() => setShowResetModal(true)}
@@ -118,54 +118,23 @@ export default function App() {
         </div>
       </aside>
 
-      {/* Conteúdo Principal */}
+      {/* Conteúdo Central */}
       <main className="flex-1 overflow-y-auto p-4 sm:p-6 md:p-8 max-w-7xl mx-auto w-full">
-        {/* Renderização Condicional Limpa das Abas */}
-        {activeTab === "revo" && (
-          <RevolutionTab
-            score={gameState.stats.score}
-            onScoreChange={(val) => updateStat("score", val)}
-          />
-        )}
-
-        {activeTab === "infinity" && (
-          <InfinityTab
-            checkedTasks={gameState.completedTasks}
-            onToggleCheck={toggleTask}
-            starCount={gameState.stats.stars}
-            onStarCountChange={(val) => updateStat("stars", val)}
-            starBasePurchases={gameState.stats.starBaseUpgrades}
-            onStarBasePurchasesChange={(val) => updateStat("starBaseUpgrades", val)}
-          />
-        )}
-
+        {activeTab === "revo" && <RevolutionTab />}
+        {activeTab === "infinity" && <InfinityTab />}
         {activeTab === "eternity" && <EternityTab />}
-
-        {activeTab === "dilation" && (
-          <EternityTab /> /* A subpágina 5 de EternityTab contém o alocador completo de Dilatação */
-        )}
-
+        {activeTab === "dilation" && <DilationTab />}
         {activeTab === "macros" && <MacrosTab />}
 
-        {/* 5 Abas Desativadas Padronizadas */}
-        {activeTab === "unity" && (
-          <ComingSoonTab icon="☯" title="Unidade (Unity)" layerNumber="Camada 5 de Reset" />
-        )}
-        {activeTab === "minerals" && (
-          <ComingSoonTab icon="◆" title="Minerais" layerNumber="Minigame de Merge & Coleta" />
-        )}
-        {activeTab === "tarot" && (
-          <ComingSoonTab icon="🔮" title="Tarô" layerNumber="Sistema de Cartas & Cooldowns" />
-        )}
-        {activeTab === "plague" && (
-          <ComingSoonTab icon="☣️" title="Praga" layerNumber="Evolução, Pips & Síntese" />
-        )}
-        {activeTab === "singularity" && (
-          <ComingSoonTab icon="⚛" title="Singularidade" layerNumber="Endgame & Nós Quânticos" />
-        )}
+        {/* Telas Em Breve */}
+        {activeTab === "unity" && <ComingSoonTab icon="☯" title="Unidade (Unity)" layerNumber="Camada 5 de Reset" />}
+        {activeTab === "minerals" && <ComingSoonTab icon="◆" title="Minerais" layerNumber="Minigame de Merge & Coleta" />}
+        {activeTab === "tarot" && <ComingSoonTab icon="🔮" title="Tarô" layerNumber="Sistema de Cartas & Cooldowns" />}
+        {activeTab === "plague" && <ComingSoonTab icon="☣️" title="Praga" layerNumber="Evolução, Pips & Síntese" />}
+        {activeTab === "singularity" && <ComingSoonTab icon="⚛" title="Singularidade" layerNumber="Endgame & Nós Quânticos" />}
       </main>
 
-      {/* Modal de Confirmação para Reset Total */}
+      {/* Modal de Confirmação do Reset */}
       {showResetModal && (
         <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
           <div className="max-w-sm w-full bg-zinc-900 border-2 border-red-500/40 rounded-3xl p-6 space-y-4 shadow-2xl">
@@ -176,7 +145,7 @@ export default function App() {
             <div className="text-center space-y-1">
               <h3 className="text-base font-bold text-white">Resetar Todos os Dados?</h3>
               <p className="text-xs text-zinc-400 font-sans leading-relaxed">
-                Esta ação apagará <strong>permanentemente</strong> todos os dados locais, progresso em checklists, notas de macro e alocações de Dilatação.
+                Esta ação apagará <strong>permanentemente</strong> todos os estados persistidos de Revolução, Infinito, Eternidade e Dilatação.
               </p>
             </div>
 

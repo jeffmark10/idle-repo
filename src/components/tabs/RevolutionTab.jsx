@@ -2,83 +2,79 @@ import React, { useState, useMemo } from "react";
 import { 
   CircleDot, Calculator, Trophy, Gift, 
   ArrowUpCircle, ShoppingBag, Lightbulb, 
-  Flag, Keyboard, Edit3, Zap, BookOpen, Layers
+  Flag, Keyboard, Edit3, Zap, BookOpen 
 } from "lucide-react";
 import StatCard from "../ui/StatCard";
 import { CIRCLES_DATA, DAILY_REWARDS_DATA } from "../../data/gameData";
+import { PRESTIGE_FORMULAS } from "../../data/gameEngine";
 import { parseIncrementalNumber, formatScientific } from "../../utils/numberParser";
 import { calculateLeaderboardScore } from "../../utils/leaderboardMath";
+import { useGame } from "../../context/GameContext";
 
-export default function RevolutionTab({ score, onScoreChange }) {
+export default function RevolutionTab() {
+  const { gameState, updateStat } = useGame();
   const [subSection, setSubSection] = useState("overview");
 
+  const score = gameState.stats.score;
   const parsedScore = useMemo(() => parseIncrementalNumber(score), [score]);
   
   // Controle de Nível de Promoção
-  const [promoLevelInput, setPromoLevelInput] = useState("10");
+  const promoLevel = gameState.stats.promoLevel;
+  const [promoLevelInput, setPromoLevelInput] = useState(String(promoLevel));
+
   const parsedPromoLevel = useMemo(() => {
     const res = parseIncrementalNumber(promoLevelInput);
-    return res.isValid ? Math.max(1, res.value) : 10;
-  }, [promoLevelInput]);
+    return res.isValid ? Math.max(1, res.value) : promoLevel;
+  }, [promoLevelInput, promoLevel]);
 
-  // Fórmulas de Prestígio (wiki.gg)
-  const pMult = useMemo(() => {
-    const s = parsedScore.value;
-    if (s < 1e3) return 1;
-    return 2.56 * Math.pow(Math.max(0, Math.log10(s / 1e3)), 2.25);
-  }, [parsedScore.value]);
-
-  const pExp = useMemo(() => {
-    const s = parsedScore.value;
-    if (s < 1e5) return 1;
-    return 1 + Math.max(0, Math.log10(s / 1e5)) / 225;
-  }, [parsedScore.value]);
-
-  // Fórmulas de Promoção (wiki.gg)
-  const promoXp = Math.floor(Math.pow(Math.max(0, pMult / 1000), 0.75));
-  const p4 = 1 + 0.05 * Math.pow(parsedPromoLevel, 0.48);
-  const p1 = p4 * (Math.floor(Math.pow(parsedPromoLevel, 1.5)) + 1);
-  const p2 = p4 * (1 + Math.sqrt(parsedPromoLevel));
-  const p3 = p4 * (10 + Math.pow(parsedPromoLevel, 0.82));
+  // Fórmulas Centrais
+  const pMult = useMemo(() => PRESTIGE_FORMULAS.calcPMult(parsedScore.value), [parsedScore.value]);
+  const pExp = useMemo(() => PRESTIGE_FORMULAS.calcPExp(parsedScore.value), [parsedScore.value]);
+  const promoXp = useMemo(() => PRESTIGE_FORMULAS.calcPromoXP(pMult), [pMult]);
+  const { p1, p2, p3, p4 } = useMemo(() => PRESTIGE_FORMULAS.calcPromoPowers(parsedPromoLevel), [parsedPromoLevel]);
 
   // Sequência Diária (Streak)
   const [streakDay, setStreakDay] = useState(10);
   const streakBonus = Math.min(50, streakDay * 5);
 
-  // Simulador de Leaderboard
-  const [lbStats] = useState({
-    maxExponent: 1.5,
-    maxInfinites: 50,
-    maxIP: 1e20,
-    maxChallenges: 9,
-    maxStars: 8,
-    eternities: 100,
-    maxEP: 1e10,
-    maxAnimals: 20,
-    maxLabLevel: 100,
-    maxSupernova: 10,
-    maxDP: 1e5,
-    maxDTP: 13,
-    maxUnities: 5,
-    maxZodiacLevel: 50,
-    maxTrialCount: 6,
-    maxAttackLevel: 100
-  });
-
   const calculatedLbScore = useMemo(() => {
     return calculateLeaderboardScore({
-      ...lbStats,
-      maxScore: parsedScore.value
+      maxScore: parsedScore.value,
+      maxExponent: pExp,
+      maxInfinites: 0,
+      maxIP: 0,
+      maxChallenges: 0,
+      maxStars: 0,
+      eternities: 0,
+      maxEP: 0,
+      maxAnimals: 0,
+      maxLabLevel: 0,
+      maxSupernova: 0,
+      maxDP: 0,
+      maxDTP: 0,
+      maxUnities: 0,
+      maxZodiacLevel: 0,
+      maxTrialCount: 0,
+      maxAttackLevel: 0
     });
-  }, [lbStats, parsedScore.value]);
+  }, [parsedScore.value, pExp]);
+
+  const handleScoreChange = (val) => {
+    updateStat("score", val);
+  };
 
   const updatePromoLevel = (val) => {
-    setPromoLevelInput(String(val));
+    const clean = String(val);
+    setPromoLevelInput(clean);
+    const parsed = parseIncrementalNumber(clean);
+    if (parsed.isValid) {
+      updateStat("promoLevel", parsed.value);
+    }
   };
 
   return (
     <div className="space-y-6">
-      {/* Menu Superior de Sub-seções */}
+      {/* Menu Superior */}
       <div className="flex items-center gap-1.5 p-1.5 rounded-2xl bg-zinc-900/60 border border-zinc-800 overflow-x-auto scrollbar-none font-mono text-xs">
         {[
           { id: "overview", label: "1. Visão Geral & Guia", icon: BookOpen },
@@ -104,9 +100,7 @@ export default function RevolutionTab({ score, onScoreChange }) {
         })}
       </div>
 
-      {/* ========================================================================= */}
-      {/* SUB-SEÇÃO 1: VISÃO GERAL & GUIA DE INICIANTE */}
-      {/* ========================================================================= */}
+      {/* 1. VISÃO GERAL */}
       {subSection === "overview" && (
         <div className="space-y-6">
           <div className="p-6 rounded-3xl bg-gradient-to-br from-red-950/40 via-zinc-900/70 to-zinc-950 border-2 border-red-500/30 shadow-2xl space-y-4">
@@ -125,10 +119,9 @@ export default function RevolutionTab({ score, onScoreChange }) {
             </div>
 
             <p className="text-xs sm:text-sm text-zinc-300 leading-relaxed">
-              Bem-vindo ao <strong>Revolution Idle</strong>! O início pode parecer lento, mas as mecânicas se abrem bastante conforme você avança. Seu primeiro Infinity exige <strong>1.79e308 de Pontuação</strong> e aproximadamente <strong>1e42 (1 TDC) de Prestígio</strong>.
+              Bem-vindo ao <strong>Revolution Idle</strong>! O início pode parecer gradual, mas as mecânicas se expandem conforme você avança. Seu primeiro Infinity exige <strong>1.79e308 de Pontuação</strong> e aproximadamente <strong>1e42 (1 TDC) de Prestígio</strong>.
             </p>
 
-            {/* 4 Mecânicas Centrais */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3 pt-1">
               <div className="p-3.5 rounded-2xl bg-zinc-950/80 border border-zinc-800 space-y-1">
                 <span className="text-red-400 font-bold text-xs flex items-center gap-1.5">
@@ -144,7 +137,7 @@ export default function RevolutionTab({ score, onScoreChange }) {
                   <ArrowUpCircle className="w-3.5 h-3.5" /> Ascensões
                 </span>
                 <p className="text-xs text-zinc-400 leading-relaxed">
-                  Reseta o círculo para o nível 5, concede +10 no nível máximo e multiplica o Mult Gain por 10x por padrão.
+                  Reseta o círculo para o nível 5, concede +10 no nível máximo e multiplica o Mult Gain por 10x.
                 </p>
               </div>
 
@@ -153,7 +146,7 @@ export default function RevolutionTab({ score, onScoreChange }) {
                   <Calculator className="w-3.5 h-3.5" /> Prestígio (1e10 Score)
                 </span>
                 <p className="text-xs text-zinc-400 leading-relaxed">
-                  Redefine cores e ascensões, concedendo P.Mult (multiplicador estático) e P.Expoente (escala logarítmica potente).
+                  Redefine cores e ascensões, concedendo P.Mult (multiplicador total) e P.Expoente (escala exponencial).
                 </p>
               </div>
 
@@ -168,14 +161,13 @@ export default function RevolutionTab({ score, onScoreChange }) {
             </div>
           </div>
 
-          {/* Cards de Dicas Rápidas */}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 font-mono text-xs">
             <div className="p-4 rounded-2xl bg-amber-950/20 border border-amber-500/30 text-amber-200 space-y-1">
               <div className="flex items-center gap-1.5 font-bold text-amber-400 text-xs">
                 <Lightbulb className="w-4 h-4" /> Conquista Grátis
               </div>
               <p className="text-[11px] font-sans text-zinc-300">
-                Abra a aba "Créditos" para liberar a Conquista #005 ("Verifique o Dev") e ganhar bônus multiplicador imediato.
+                Abra a aba "Créditos" para liberar a Conquista #005 ("Verifique o Dev") e ganhar bônus multiplicador.
               </p>
             </div>
 
@@ -193,7 +185,7 @@ export default function RevolutionTab({ score, onScoreChange }) {
                 <Keyboard className="w-4 h-4 text-emerald-400" /> Atalhos Úteis
               </div>
               <p className="text-[11px] font-sans text-zinc-400">
-                <strong className="text-white">B</strong>: Compra Cores | <strong className="text-white">P</strong>: Prestígio | <strong className="text-white">1-4</strong>: Promoções. Ative a notação científica.
+                <strong className="text-white">B</strong>: Compra Cores | <strong className="text-white">P</strong>: Prestígio | <strong className="text-white">1-4</strong>: Promoções.
               </p>
             </div>
 
@@ -202,19 +194,16 @@ export default function RevolutionTab({ score, onScoreChange }) {
                 <ShoppingBag className="w-4 h-4" /> Compras na Loja
               </div>
               <p className="text-[11px] font-sans text-zinc-300">
-                Bônus de loja são cosméticos/opcionais. Economize Almas e use TF 2x caso queira acelerar períodos de espera.
+                Bônus de loja são opcionais. Guarde Almas para cosméticos e use TF 2x caso queira acelerar esperas.
               </p>
             </div>
           </div>
         </div>
       )}
 
-      {/* ========================================================================= */}
-      {/* SUB-SEÇÃO 2: CÍRCULOS & CALCULADOR DE PRESTÍGIO */}
-      {/* ========================================================================= */}
+      {/* 2. CALCULADOR DE PRESTÍGIO */}
       {subSection === "calculator" && (
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
-          {/* Tabela dos 10 Círculos */}
           <div className="lg:col-span-6 p-5 rounded-3xl bg-zinc-900/40 border border-zinc-800 space-y-4">
             <div className="flex items-center justify-between border-b border-zinc-800 pb-3">
               <h2 className="text-sm font-bold text-white flex items-center gap-2">
@@ -245,30 +234,19 @@ export default function RevolutionTab({ score, onScoreChange }) {
                 </tbody>
               </table>
             </div>
-
-            <div className="p-4 rounded-2xl bg-zinc-950 border border-zinc-800/80 space-y-1.5 text-xs text-zinc-300">
-              <div className="font-bold text-white flex items-center gap-1.5">
-                <ArrowUpCircle className="w-4 h-4 text-amber-400" /> Dicas de Ascensão Estratégica
-              </div>
-              <p className="text-[11px] text-zinc-400 leading-relaxed font-sans">
-                Quando os círculos atingirem o nível máximo, considere esperar até que 1 ou 2 adicionais estejam prontos. Isso mantém a velocidade da corrida, já que círculos ascendidos resetam para o nível 5. A partir do nível 10 pós-ascensão, o crescimento acelera drasticamente.
-              </p>
-            </div>
           </div>
 
-          {/* Calculador de Prestígio & Promoções Expandido */}
-          <div className="lg:col-span-6 p-6 rounded-3xl bg-gradient-to-b from-orange-950/30 via-zinc-900/60 to-zinc-950 border-2 border-orange-500/40 shadow-2xl shadow-orange-950/30 space-y-5">
+          <div className="lg:col-span-6 p-6 rounded-3xl bg-gradient-to-b from-orange-950/30 via-zinc-900/60 to-zinc-950 border-2 border-orange-500/40 shadow-2xl space-y-5">
             <div className="flex items-center justify-between border-b border-orange-500/20 pb-3">
               <h2 className="text-base font-extrabold text-white flex items-center gap-2">
                 <Calculator className="w-5 h-5 text-orange-400" /> Calculador de Prestígio & Promoções
               </h2>
               <span className="text-xs font-mono font-bold px-2.5 py-1 rounded-full bg-orange-500/20 text-orange-300 border border-orange-500/30">
-                Live Preview
+                Sincronizado
               </span>
             </div>
 
             <div className="space-y-4 font-mono">
-              {/* Pontuação Atual */}
               <div className="p-4 rounded-2xl bg-zinc-950/80 border border-zinc-800 space-y-2.5">
                 <div className="flex justify-between items-center text-xs text-zinc-300">
                   <label htmlFor="revScoreInputEl" className="font-bold flex items-center gap-1.5">
@@ -283,7 +261,7 @@ export default function RevolutionTab({ score, onScoreChange }) {
                   id="revScoreInputEl"
                   type="text"
                   value={score}
-                  onChange={(e) => onScoreChange(e.target.value)}
+                  onChange={(e) => handleScoreChange(e.target.value)}
                   placeholder="Ex: 1e10, 500k, 1e42"
                   className={`w-full bg-zinc-900 border rounded-xl px-3 py-2 text-sm text-white font-mono focus:outline-none ${
                     parsedScore.isValid ? "border-orange-500/40 focus:border-orange-400" : "border-red-500"
@@ -294,7 +272,7 @@ export default function RevolutionTab({ score, onScoreChange }) {
                   {["1e10", "1e12", "1e15", "1e20", "1e30", "1e42", "1.79e308"].map((val) => (
                     <button
                       key={val}
-                      onClick={() => onScoreChange(val)}
+                      onClick={() => handleScoreChange(val)}
                       className="px-2 py-1 rounded-lg bg-zinc-900 hover:bg-orange-900/40 text-[10px] text-zinc-300 border border-zinc-800 transition-colors"
                     >
                       {val}
@@ -303,7 +281,6 @@ export default function RevolutionTab({ score, onScoreChange }) {
                 </div>
               </div>
 
-              {/* Cards de Resultados de Prestígio */}
               <div className="grid grid-cols-3 gap-2">
                 <div className="p-3 rounded-2xl bg-zinc-950 border border-orange-500/30 text-center space-y-0.5">
                   <span className="text-[10px] text-zinc-400 font-bold uppercase block">P.Mult</span>
@@ -320,14 +297,13 @@ export default function RevolutionTab({ score, onScoreChange }) {
                 </div>
 
                 <div className="p-3 rounded-2xl bg-orange-950/40 border-2 border-emerald-500/50 text-center space-y-0.5">
-                  <span className="text-[10px] text-zinc-300 font-bold uppercase block">EXP Promoção</span>
+                  <span className="text-[10px] text-zinc-300 font-bold uppercase block">EXP Promo</span>
                   <strong className="text-xs sm:text-sm text-emerald-400 font-black">
                     +{formatScientific(promoXp)}
                   </strong>
                 </div>
               </div>
 
-              {/* Nível de Promoção (L) */}
               <div className="p-4 rounded-2xl bg-zinc-950/80 border border-zinc-800 space-y-2.5">
                 <div className="flex justify-between items-center text-xs text-zinc-300">
                   <label htmlFor="promoLevelInputEl" className="font-bold flex items-center gap-1.5">
@@ -343,7 +319,6 @@ export default function RevolutionTab({ score, onScoreChange }) {
                   type="text"
                   value={promoLevelInput}
                   onChange={(e) => updatePromoLevel(e.target.value)}
-                  placeholder="Ex: 10, 30, 75"
                   className="w-full bg-zinc-900 border border-orange-500/40 rounded-xl px-3 py-2 text-sm text-white font-mono focus:border-orange-400 focus:outline-none"
                 />
 
@@ -358,18 +333,8 @@ export default function RevolutionTab({ score, onScoreChange }) {
                     </button>
                   ))}
                 </div>
-
-                <input
-                  type="range"
-                  min="1"
-                  max={Math.max(75, Math.min(500, parsedPromoLevel > 75 ? parsedPromoLevel * 1.5 : 100))}
-                  value={Math.min(500, parsedPromoLevel)}
-                  onChange={(e) => updatePromoLevel(Number(e.target.value))}
-                  className="w-full h-2 rounded-lg bg-zinc-800 accent-orange-500 cursor-pointer mt-1"
-                />
               </div>
 
-              {/* Grid dos 4 Poderes */}
               <div className="grid grid-cols-2 gap-2 text-xs">
                 <div className="p-2.5 rounded-xl bg-zinc-950 border border-zinc-800">
                   <span className="text-[10px] text-zinc-500 font-bold block">P1 (Ganho Mult)</span>
@@ -391,25 +356,14 @@ export default function RevolutionTab({ score, onScoreChange }) {
                   <strong className="text-xs sm:text-sm text-orange-300 font-extrabold">+{p4.toFixed(2)}x</strong>
                 </div>
               </div>
-
-              {/* Rota Recomendada */}
-              <div className="p-3 bg-gradient-to-br from-orange-950/60 via-amber-950/40 to-zinc-950 rounded-xl border border-orange-500/30 text-[11px] text-zinc-300 space-y-0.5 font-sans">
-                <span className="font-extrabold text-orange-300 block">🎯 Rota Sugerida de Promoções:</span>
-                <p className="text-zinc-400 font-mono text-[10px]">
-                  #1 (Nv 3, 8, 20, 30 → 80) | #2 (Nv 10, 40) | #3 (Nv 30, 70) | #4 (Nv 50). Nivele todas em 75 antes do Infinito!
-                </p>
-              </div>
             </div>
           </div>
         </div>
       )}
 
-      {/* ========================================================================= */}
-      {/* SUB-SEÇÃO 3: RECOMPENSAS DIÁRIAS & TABELA DE LÍDERES */}
-      {/* ========================================================================= */}
+      {/* 3. RECOMPENSAS & RANKING */}
       {subSection === "rewards" && (
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
-          {/* Recompensas Diárias (14 Dias) */}
           <div className="lg:col-span-6 p-6 rounded-3xl bg-zinc-900/40 border border-zinc-800 space-y-4">
             <div className="flex justify-between items-center border-b border-zinc-800 pb-3">
               <h2 className="text-sm font-bold text-white flex items-center gap-2">
@@ -453,7 +407,6 @@ export default function RevolutionTab({ score, onScoreChange }) {
             </div>
           </div>
 
-          {/* Tabela de Líderes */}
           <div className="lg:col-span-6 p-6 rounded-3xl bg-zinc-900/40 border border-zinc-800 space-y-4">
             <div className="flex justify-between items-center border-b border-zinc-800 pb-3">
               <h2 className="text-sm font-bold text-white flex items-center gap-2">
@@ -472,10 +425,9 @@ export default function RevolutionTab({ score, onScoreChange }) {
             </div>
 
             <div className="p-4 rounded-2xl bg-zinc-950 border border-zinc-800 text-[11px] text-zinc-400 space-y-1.5 leading-relaxed font-mono">
-              <div className="text-zinc-300 font-bold">Fatores que mais impulsionam o Ranking:</div>
-              <div>• <strong>Score Máximo & Exp:</strong> (1 + log10(1 + log10(Score))) × Exp</div>
+              <div className="text-zinc-300 font-bold">Fatores que impulsionam o Ranking:</div>
+              <div>• <strong>Score & Exp:</strong> (1 + log10(1 + log10(Score))) × Exp</div>
               <div>• <strong>Supernovas & Lab:</strong> (1 + SN/10)^0.6 × (1 + Lab/50)^0.35</div>
-              <div>• <strong>Zodíaco & Ataques:</strong> (1 + ZodiacLv/100) × (1 + log10(1 + AttackLv))</div>
             </div>
           </div>
         </div>

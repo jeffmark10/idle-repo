@@ -1,13 +1,11 @@
 import React, { useState } from "react";
 import { 
   Hourglass, Sparkles, Check, 
-  FlaskConical, Compass, Network, 
-  Trophy, RefreshCw, Zap, Copy, CheckCheck,
-  Table
+  FlaskConical, Compass, Trophy, Zap 
 } from "lucide-react";
 import { formatScientific } from "../../utils/numberParser";
+import { useGame } from "../../context/GameContext";
 
-// 1. Marcos da Eternidade por Σ
 const ETERNITY_MILESTONES = [
   { eternities: 1, desc: "Desbloqueia a aba de Marcos da Eternidade e bônus estatísticos." },
   { eternities: 2, desc: "A partir desta Eternidade, mantém todas as Automações ativas." },
@@ -22,7 +20,6 @@ const ETERNITY_MILESTONES = [
   { eternities: 100, desc: "x1.05 para IP ganho por Eternidade (Softcap em 1.000 Σ)." }
 ];
 
-// 2. Marcos de Animais
 const ANIMAL_MILESTONES = [
   { count: 1, desc: "Desbloqueia a Desaceleração (Slowdown)." },
   { count: 4, desc: "Desbloqueia a Desaceleração Automática." },
@@ -33,7 +30,6 @@ const ANIMAL_MILESTONES = [
   { count: 81, desc: "Desbloqueia a Dilatação (com todos os 81 Animais comprados)." }
 ];
 
-// 3. Rota Linear de Animais no Grid 9x9
 const ANIMAL_PROGRESSION_PATH = [
   { step: "1º Bloco", desc: "[1;1] Gato → [1;5] Furão, [2;5] Chinchila, [2;4] Jerboa, [3;4] Pato" },
   { step: "2º Bloco", desc: "[2;1] Rato → [2;3] Porquinho-da-índia, [3;3] Galo, [4;3] Ovelha, [4;4] Vaca" },
@@ -47,7 +43,6 @@ const ANIMAL_PROGRESSION_PATH = [
   { step: "Final", desc: "Após o Pégaso, compre os animais mais baratos restantes até completar 81." }
 ];
 
-// 4. Matriz Oficial dos 50 Desafios da Eternidade (EC 1 a 10, cada um com 5 dificuldades)
 const ETERNITY_CHALLENGES_DATA = [
   {
     num: 1,
@@ -171,156 +166,31 @@ const ETERNITY_CHALLENGES_DATA = [
   }
 ];
 
-// 5. Tabela Sequencial da Árvore de Dilatação (DTP 1 a 40+)
-const DILATION_STEP_BY_STEP = [
-  { dtp: 1, pick: "C1", code: "C1;T0,0,0,0;M0,0,0,0;B0,0,0,0", ap: "—", sn: "44", et: "50k" },
-  { dtp: 2, pick: "M1", code: "C1;T0,0,0,0;M1,0,0,0;B0,0,0,0", ap: "6.5k", sn: "46", et: "—" },
-  { dtp: 3, pick: "Respec", code: "C1;T1,1,0,0;M0,0,0,0;B0,0,0,0", ap: "—", sn: "—", et: "—" },
-  { dtp: 4, pick: "T3", code: "C1;T1,1,1,0;M0,0,0,0;B0,0,0,0", ap: "—", sn: "—", et: "—" },
-  { dtp: 5, pick: "T3", code: "C1;T1,1,2,0;M0,0,0,0;B0,0,0,0", ap: "10k", sn: "80", et: "—" },
-  { dtp: 5, pick: "Respec", code: "C1;T0,0,0,0;M0,0,0,0;B1,1,2,0", ap: "—", sn: "—", et: "—" },
-  { dtp: 6, pick: "Respec", code: "C1;T1,0,0,0;M0,0,0,0;B1,1,2,0", ap: "—", sn: "—", et: "—" },
-  { dtp: 7, pick: "T2", code: "C1;T1,1,0,0;M0,0,0,0;B1,1,2,0", ap: "—", sn: "—", et: "—" },
-  { dtp: 8, pick: "Respec SN", code: "C1;T1,1,5,0;M0,0,0,0;B0,0,0,0", ap: "—", sn: "105", et: "—" },
-  { dtp: 8, pick: "Respec AP", code: "C1;T1,1,0,0;M0,0,0,0;B1,1,3,0", ap: "25k", sn: "—", et: "—" },
-  { dtp: 9, pick: "B3", code: "C1;T1,1,0,0;M0,0,0,0;B1,1,4,0", ap: "—", sn: "—", et: "—" },
-  { dtp: 10, pick: "B3", code: "C1;T1,1,0,0;M0,0,0,0;B1,1,5,0", ap: "—", sn: "—", et: "—" },
-  { dtp: 11, pick: "M1", code: "C1;T1,1,0,0;M1,0,0,0;B1,1,5,0", ap: "30k", sn: "—", et: "—" },
-  { dtp: 12, pick: "M1", code: "C1;T1,1,0,0;M3,0,0,0;B1,1,4,0", ap: "32k", sn: "—", et: "—" },
-  { dtp: 12, pick: "Respec", code: "C5;T1,1,0,0;M0,0,0,0;B1,1,3,0", ap: "—", sn: "—", et: "—" },
-  { dtp: 13, pick: "Farm ET", code: "C1;T0,0,0,0;M1,5,1,5;B0,0,0,0", ap: "—", sn: "—", et: "1e9" },
-  { dtp: 13, pick: "Respec", code: "C5;T1,1,0,0;M0,0,0,0;B1,1,4,0", ap: "—", sn: "—", et: "—" },
-  { dtp: 14, pick: "Respec", code: "C5;T1,1,1,1;M1,0,0,0;B1,1,1,1", ap: "38k", sn: "—", et: "—" },
-  { dtp: 15, pick: "Respec", code: "C1;T1,1,1,5;M0,0,0,0;B1,5,0,0", ap: "44.5k", sn: "—", et: "—" },
-  { dtp: 15, pick: "Respec", code: "C5;T1,1,1,1;M1,0,0,0;B1,1,2,1", ap: "—", sn: "—", et: "—" },
-  { dtp: 16, pick: "Respec SN", code: "C1;T1,1,5,0;M0,0,0,0;B1,1,1,5", ap: "—", sn: "120", et: "—" },
-  { dtp: 16, pick: "Respec AP", code: "C4;T0,0,0,0;M1,1,5,5;B0,0,0,0", ap: "130k", sn: "—", et: "—" },
-  { dtp: 17, pick: "C1", code: "C5;T0,0,0,0;M1,1,5,5;B0,0,0,0", ap: "—", sn: "—", et: "—" },
-  { dtp: 18, pick: "Respec AP", code: "C1;T1,1,1,5;M0,0,0,0;B4,5,0,0", ap: "60k", sn: "—", et: "—" },
-  { dtp: 18, pick: "Respec SN", code: "C1;T1,1,5,2;M0,0,0,0;B1,1,1,5", ap: "—", sn: "128", et: "—" },
-  { dtp: 18, pick: "Respec", code: "C5;T0,0,0,0;M2,1,5,5;B0,0,0,0", ap: "—", sn: "—", et: "—" },
-  { dtp: 19, pick: "M1", code: "C5;T0,0,0,0;M3,1,5,5;B0,0,0,0", ap: "—", sn: "—", et: "—" },
-  { dtp: 20, pick: "M1", code: "C5;T0,0,0,0;M4,1,5,5;B0,0,0,0", ap: "—", sn: "—", et: "—" },
-  { dtp: 21, pick: "M1", code: "C5;T0,0,0,0;M5,1,5,5;B0,0,0,0", ap: "—", sn: "—", et: "—" },
-  { dtp: 22, pick: "Respec SN", code: "C1;T1,1,5,5;M0,0,0,0;B1,2,1,5", ap: "—", sn: "149", et: "—" },
-  { dtp: 22, pick: "Respec", code: "C4;T1,1,0,0;M5,1,5,5;B0,0,0,0", ap: "—", sn: "—", et: "—" },
-  { dtp: 23, pick: "C1", code: "C5;T1,1,0,0;M5,1,5,5;B0,0,0,0", ap: "—", sn: "—", et: "—" },
-  { dtp: 25, pick: "Respec", code: "C5;T0,0,0,0;M5,1,5,5;B1,1,2,0", ap: "216k", sn: "—", et: "—" },
-  { dtp: 26, pick: "B3", code: "C5;T0,0,0,0;M5,1,5,5;B1,1,3,0", ap: "—", sn: "—", et: "—" },
-  { dtp: 27, pick: "B3", code: "C5;T0,0,0,0;M5,1,5,5;B1,1,4,0", ap: "—", sn: "—", et: "—" },
-  { dtp: 28, pick: "B3", code: "C5;T0,0,0,0;M5,1,5,5;B1,1,5,0", ap: "—", sn: "—", et: "—" },
-  { dtp: 29, pick: "Respec", code: "C5;T1,1,0,0;M5,1,5,5;B1,1,4,0", ap: "221k", sn: "—", et: "—" },
-  { dtp: 30, pick: "Respec", code: "C1;T1,1,1,5;M1,1,5,5;B1,2,1,5", ap: "250k", sn: "—", et: "—" },
-  { dtp: 30, pick: "Respec", code: "C5;T1,1,0,0;M5,1,5,5;B1,1,5,0", ap: "—", sn: "—", et: "—" },
-  { dtp: 31, pick: "Respec", code: "C5;T1,1,1,1;M5,1,5,5;B1,1,4,0", ap: "—", sn: "—", et: "—" },
-  { dtp: 32, pick: "Respec", code: "C1;T1,1,1,5;M1,1,5,5;B1,4,1,5", ap: "283k", sn: "—", et: "—" },
-  { dtp: 32, pick: "Respec", code: "C5;T1,1,1,1;M5,1,5,5;B1,1,5,0", ap: "—", sn: "—", et: "—" },
-  { dtp: 33, pick: "T4", code: "C5;T1,1,1,2;M5,1,5,5;B1,1,5,0", ap: "—", sn: "—", et: "—" },
-  { dtp: 34, pick: "T4", code: "C5;T1,1,1,3;M5,1,5,5;B1,1,5,0", ap: "—", sn: "—", et: "—" },
-  { dtp: 35, pick: "T4", code: "C5;T1,1,1,4;M5,1,5,5;B1,1,5,0", ap: "—", sn: "—", et: "—" },
-  { dtp: 36, pick: "T4", code: "C5;T1,1,1,5;M5,1,5,5;B1,1,5,0", ap: "—", sn: "—", et: "—" },
-  { dtp: 37, pick: "Respec", code: "C1;T1,1,1,5;M1,1,5,5;B5,5,1,5", ap: "330k", sn: "—", et: "—" },
-  { dtp: 37, pick: "Respec", code: "C5;T1,1,1,5;M5,1,5,5;B1,1,5,1", ap: "—", sn: "—", et: "—" },
-  { dtp: 40, pick: "Respec", code: "C4;T1,1,1,5;M1,1,5,5;B5,5,1,5", ap: "—", sn: "—", et: "—" }
-];
-
-// Presets Finais de Endgame
-const ENDGAME_LOADOUTS = [
-  { name: "Supernova Final", code: "C1;T1,1,5,5;M1,1,5,5;B5,5,1,5", desc: "Redução máxima do custo de pontuação das Supernovas." },
-  { name: "Score / Animal Points", code: "C1;T1,1,1,5;M1,5,5,5;B5,5,1,5", desc: "Multiplicadores para compra em massa de AP no Zoológico." },
-  { name: "Dilation Points (DP)", code: "C5;T1,1,1,5;M5,1,5,5;B1,1,5,5", desc: "Produção máxima de DP/s para compras na Árvore." },
-  { name: "Final 57", code: "C5;T5,5,1,5;M5,1,5,5;B5,5,5,5", desc: "Build completa com todos os nós de maior magnitude ativados." }
-];
-
-// 13 DTUs da Árvore de Dilatação
-const DILATION_TREE_UPGRADES = [
-  { id: "C-1", name: "Centro (0)", branch: "Centro", max: 5, desc: "Desbloqueia os 3 ramos principais (Top, Mid, Bot)." },
-  { id: "T-1", name: "Top 1 (Vermelho)", branch: "Topo", max: 5, desc: "Fortalece a Melhoria de Dilatação 1 (DU1)." },
-  { id: "T-2", name: "Top 2 (Vermelho)", branch: "Topo", max: 5, desc: "Amplificador de Pontuação Máxima em Dilatação." },
-  { id: "T-3", name: "Top 3 (Vermelho)", branch: "Topo", max: 5, desc: "Supernovas: Reduz o requisito de pontuação das Supernovas." },
-  { id: "T-4", name: "Top 4 (Vermelho)", branch: "Topo", max: 5, desc: "Sinergia: Fortalece nós do Topo (+30% c/ Ach 29 e 140)." },
-  { id: "M-1", name: "Mid 1 (Amarelo)", branch: "Meio", max: 5, desc: "Fortalece a Melhoria de Dilatação 2 (DU2 - Renda DP)." },
-  { id: "M-2", name: "Mid 2 (Amarelo)", branch: "Meio", max: 5, desc: "Aceleração de Voltas durante a Dilatação." },
-  { id: "M-3", name: "Mid 3 (Amarelo)", branch: "Meio", max: 5, desc: "Supernovas: Multiplica os bônus obtidos por Supernovas." },
-  { id: "M-4", name: "Mid 4 (Amarelo)", branch: "Meio", max: 5, desc: "Sinergia: Fortalece nós do Meio (+30% c/ Ach 29 e 140)." },
-  { id: "B-1", name: "Bot 1 (Azul)", branch: "Fundo", max: 5, desc: "Fortalece a Melhoria de Dilatação 3 (DU3 - Níveis RP)." },
-  { id: "B-2", name: "Bot 2 (Azul)", branch: "Fundo", max: 5, desc: "Eficiência de Geradores (GP) sob Dilatação." },
-  { id: "B-3", name: "Bot 3 (Azul)", branch: "Fundo", max: 5, desc: "Supernovas concedem muito mais AP (Pontos de Animais)." },
-  { id: "B-4", name: "Bot 4 (Azul)", branch: "Fundo", max: 5, desc: "Sinergia: Fortalece nós do Fundo (+30% c/ Ach 29 e 140)." }
-];
-
 export default function EternityTab() {
+  const { gameState, toggleTask, updateNestedStat } = useGame();
   const [subPage, setSubPage] = useState("milestones");
-  const [copiedCode, setCopiedCode] = useState("");
 
-  // Estado dos 50 Desafios Concluídos: chave no formato "EC{num}-{tier}"
-  const [completedEcs, setCompletedEcs] = useState({});
+  const lab = gameState.stats.lab;
+  const completedTasks = gameState.completedTasks;
 
-  // Laboratório
-  const [labBase, setLabBase] = useState(10);
-  const [labMult, setLabMult] = useState(10);
-  const [labPower, setLabPower] = useState(10);
-
-  // Árvore de Dilatação
-  const [dtpAllocations, setDtpAllocations] = useState({ "C-1": 1 });
-
-  // LP/s = (Base * Mult)^Power
-  const lpBaseVal = 1 + labBase * 0.20;
-  const lpMultVal = 1 + labMult * 0.50;
-  const lpPowerVal = 1 + labPower * 0.01;
+  const lpBaseVal = 1 + lab.base * 0.20;
+  const lpMultVal = 1 + lab.mult * 0.50;
+  const lpPowerVal = 1 + lab.power * 0.01;
   const lpPerSecond = Math.pow(lpBaseVal * lpMultVal, lpPowerVal);
 
-  const toggleEcDifficulty = (ecNum, tier) => {
-    const key = `EC${ecNum}-${tier}`;
-    setCompletedEcs(prev => ({ ...prev, [key]: !prev[key] }));
-  };
-
-  const totalEcCompleted = Object.values(completedEcs).filter(Boolean).length;
-
-  const handleDtpChange = (id, delta) => {
-    setDtpAllocations(prev => {
-      const current = prev[id] || 0;
-      const next = Math.max(0, Math.min(5, current + delta));
-      return { ...prev, [id]: next };
-    });
-  };
-
-  const applyPreset = (code) => {
-    const parts = code.split(";");
-    const newAlloc = {};
-    parts.forEach(p => {
-      const type = p[0];
-      const rest = p.substring(1);
-      if (type === "C") {
-        newAlloc["C-1"] = parseInt(rest, 10) || 0;
-      } else {
-        const nums = rest.split(",").map(n => parseInt(n, 10) || 0);
-        nums.forEach((val, idx) => {
-          newAlloc[`${type}-${idx + 1}`] = val;
-        });
-      }
-    });
-    setDtpAllocations(newAlloc);
-  };
-
-  const copyToClipboard = (text, key) => {
-    navigator.clipboard.writeText(text);
-    setCopiedCode(key);
-    setTimeout(() => setCopiedCode(""), 2000);
-  };
-
-  const totalDtpSpent = Object.values(dtpAllocations).reduce((a, b) => a + b, 0);
+  const totalEcCompleted = Object.keys(completedTasks).filter(
+    k => k.startsWith("EC") && completedTasks[k]
+  ).length;
 
   return (
     <div className="space-y-6">
-      {/* Menu Superior de Subpáginas da Eternidade */}
+      {/* Menu Superior de 4 Subpáginas */}
       <div className="flex items-center gap-1.5 p-1.5 rounded-2xl bg-zinc-900/60 border border-zinc-800 overflow-x-auto scrollbar-none font-mono text-xs">
         {[
           { id: "milestones", label: "1. Marcos & Bônus (Σ)", icon: Hourglass },
           { id: "zoo", label: "2. Zoológico & Builds (AP)", icon: Sparkles },
           { id: "lab", label: "3. Laboratório (LP/RP)", icon: FlaskConical },
           { id: "challenges", label: "4. Desafios Eternos (50 ECs)", icon: Trophy },
-          { id: "dilation", label: "5. Dilatação & Árvore (DTP)", icon: Network },
         ].map((tab) => {
           const Icon = tab.icon;
           const isActive = subPage === tab.id;
@@ -341,16 +211,14 @@ export default function EternityTab() {
         })}
       </div>
 
-      {/* ========================================================================= */}
-      {/* 1. MARCOS DA ETERNIDADE & BÔNUS ESCALONÁVEIS */}
-      {/* ========================================================================= */}
+      {/* 1. MARCOS & BÔNUS */}
       {subPage === "milestones" && (
         <div className="space-y-6">
           <div className="p-6 rounded-3xl bg-gradient-to-br from-indigo-950/40 via-zinc-900/70 to-zinc-950 border-2 border-indigo-500/30 shadow-2xl space-y-4">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-indigo-500/20 pb-3">
               <div>
                 <span className="text-xs font-mono uppercase text-indigo-400 font-bold tracking-wider">
-                  Eternidade • Camada 2 de Prestígio
+                  Eternidade • Camada 3 de Reset
                 </span>
                 <h1 className="text-xl sm:text-2xl font-black text-white mt-0.5">
                   Marcos da Eternidade & Bônus Permanentes
@@ -362,7 +230,7 @@ export default function EternityTab() {
             </div>
 
             <p className="text-xs sm:text-sm text-zinc-300 leading-relaxed">
-              Ao alcançar <strong>1.79e308 IP</strong>, você realiza a <strong>Eternidade</strong>. Isso concede <strong>Pontos de Eternidade (EP)</strong>, acumula <strong>Eternidades (Σ)</strong> e ativa 6 bônus estatísticos permanentes que escalam com seu total de Σ acumulado.
+              Ao alcançar <strong>1.79e308 IP</strong>, você ganha a opção de <strong>Eternar (Eternate)</strong>. Isso concede <strong>Pontos de Eternidade (EP)</strong>, acumula <strong>Eternidades (Σ)</strong> e ativa 6 bônus estatísticos permanentes.
             </p>
 
             <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2 pt-1 font-mono text-xs">
@@ -411,9 +279,7 @@ export default function EternityTab() {
         </div>
       )}
 
-      {/* ========================================================================= */}
-      {/* 2. ZOOLÓGICO, BUILDS DE ANIMAIS (AP) & DESACELERAÇÃO */}
-      {/* ========================================================================= */}
+      {/* 2. ZOOLÓGICO & BUILDS (AP) */}
       {subPage === "zoo" && (
         <div className="space-y-6">
           <div className="p-6 rounded-3xl bg-gradient-to-br from-purple-950/40 via-zinc-900/70 to-zinc-950 border-2 border-purple-500/30 shadow-2xl space-y-4">
@@ -432,7 +298,7 @@ export default function EternityTab() {
             </div>
 
             <p className="text-xs sm:text-sm text-zinc-300 leading-relaxed">
-              O Zoológico é uma grade <strong>9x9</strong> onde você compra animais adjacentes usando <strong>Animal Points (AP)</strong>. A partir dos Desafios da Eternidade (EC), você alternará entre <strong>Builds de IP/Farm</strong> e <strong>Builds de Score/EC</strong>.
+              O Zoológico é uma grade <strong>9x9</strong> onde você compra animais adjacentes usando <strong>Animal Points (AP)</strong>.
             </p>
 
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-1 font-mono text-xs">
@@ -484,14 +350,12 @@ export default function EternityTab() {
                 </h3>
                 <div className="p-3 bg-zinc-950 rounded-2xl border border-zinc-800 space-y-1.5">
                   <span className="text-amber-300 font-bold font-mono block">• Desacelerar (Slowdown):</span>
-                  <p className="text-zinc-400">Divide a velocidade de volta por 10 em troca de <strong>+1 Ascensão Bônus</strong> para todas as cores. Mantenha em 1 abaixo do máximo.</p>
-                  <p className="text-zinc-400">Automação recomendada inicial: <strong>1k</strong>.</p>
+                  <p className="text-zinc-400">Divide a velocidade de volta por 10 em troca de <strong>+1 Ascensão Bônus</strong> para todas as cores.</p>
                 </div>
 
                 <div className="p-3 bg-zinc-950 rounded-2xl border border-zinc-800 space-y-1.5">
                   <span className="text-cyan-300 font-bold font-mono block">• Ajustador de IP (7 Σ):</span>
-                  <p className="text-zinc-400">Multiplica o IP da última run pelo fator configurado para novo limite de reset automático.</p>
-                  <p className="text-zinc-400">Configuração inicial recomendada: <strong>1k</strong>.</p>
+                  <p className="text-zinc-400">Multiplica o IP da última run pelo fator configurado para novo limite de reset automático (padrão: <strong>1k</strong>).</p>
                 </div>
               </div>
 
@@ -515,9 +379,7 @@ export default function EternityTab() {
         </div>
       )}
 
-      {/* ========================================================================= */}
-      {/* 3. LABORATÓRIO (LAB: LP & RP) */}
-      {/* ========================================================================= */}
+      {/* 3. LABORATÓRIO (LP/RP) */}
       {subPage === "lab" && (
         <div className="space-y-6">
           <div className="p-6 rounded-3xl bg-gradient-to-br from-emerald-950/40 via-zinc-900/70 to-zinc-950 border-2 border-emerald-500/30 shadow-2xl space-y-4">
@@ -550,14 +412,14 @@ export default function EternityTab() {
                 <div>
                   <div className="flex justify-between text-zinc-400 mb-1">
                     <span>Nível de Base (+0.20/nv):</span>
-                    <span className="text-emerald-400 font-bold">{labBase}</span>
+                    <span className="text-emerald-400 font-bold">{lab.base}</span>
                   </div>
                   <input
                     type="range"
                     min="1"
                     max="100"
-                    value={labBase}
-                    onChange={(e) => setLabBase(Number(e.target.value))}
+                    value={lab.base}
+                    onChange={(e) => updateNestedStat("lab", "base", Number(e.target.value))}
                     className="w-full h-2 rounded-lg bg-zinc-800 accent-emerald-500 cursor-pointer"
                   />
                 </div>
@@ -565,14 +427,14 @@ export default function EternityTab() {
                 <div>
                   <div className="flex justify-between text-zinc-400 mb-1">
                     <span>Nível de Mult (+0.50/nv):</span>
-                    <span className="text-emerald-400 font-bold">{labMult}</span>
+                    <span className="text-emerald-400 font-bold">{lab.mult}</span>
                   </div>
                   <input
                     type="range"
                     min="1"
                     max="100"
-                    value={labMult}
-                    onChange={(e) => setLabMult(Number(e.target.value))}
+                    value={lab.mult}
+                    onChange={(e) => updateNestedStat("lab", "mult", Number(e.target.value))}
                     className="w-full h-2 rounded-lg bg-zinc-800 accent-emerald-500 cursor-pointer"
                   />
                 </div>
@@ -580,14 +442,14 @@ export default function EternityTab() {
                 <div>
                   <div className="flex justify-between text-zinc-400 mb-1">
                     <span>Nível de Poder (+0.01/nv):</span>
-                    <span className="text-emerald-400 font-bold">{labPower}</span>
+                    <span className="text-emerald-400 font-bold">{lab.power}</span>
                   </div>
                   <input
                     type="range"
                     min="1"
                     max="100"
-                    value={labPower}
-                    onChange={(e) => setLabPower(Number(e.target.value))}
+                    value={lab.power}
+                    onChange={(e) => updateNestedStat("lab", "power", Number(e.target.value))}
                     className="w-full h-2 rounded-lg bg-zinc-800 accent-emerald-500 cursor-pointer"
                   />
                 </div>
@@ -636,9 +498,7 @@ export default function EternityTab() {
         </div>
       )}
 
-      {/* ========================================================================= */}
       {/* 4. OS 50 DESAFIOS DA ETERNIDADE (EC 1-1 A EC 10-5) */}
-      {/* ========================================================================= */}
       {subPage === "challenges" && (
         <div className="space-y-6">
           <div className="p-6 rounded-3xl bg-gradient-to-br from-yellow-950/40 via-zinc-900/70 to-zinc-950 border-2 border-yellow-500/30 shadow-2xl space-y-4">
@@ -657,14 +517,14 @@ export default function EternityTab() {
             </div>
 
             <p className="text-xs sm:text-sm text-zinc-300 leading-relaxed">
-              Existem <strong>10 Desafios da Eternidade</strong>, cada um contendo <strong>5 níveis de dificuldade</strong> (totalizando 50 desafios). Cada vitória concede <strong>+1 AP gratuito</strong>. Complete 8 desafios para desbloquear <strong>Supernova</strong> e todos os 50 para liberar a <strong>Árvore de Dilatação</strong>.
+              Existem <strong>10 Desafios da Eternidade</strong>, cada um contendo <strong>5 níveis de dificuldade</strong>. Cada vitória concede <strong>+1 AP gratuito</strong>. Complete 8 desafios para desbloquear <strong>Supernova</strong> e todos os 50 para liberar a <strong>Árvore de Dilatação</strong>.
             </p>
           </div>
 
           {/* Grid dos 10 Desafios com 5 Níveis Cada */}
           <div className="space-y-4">
             {ETERNITY_CHALLENGES_DATA.map((ec) => {
-              const completedCountForThisEc = ec.tiers.filter(t => !!completedEcs[`EC${ec.num}-${t.tier}`]).length;
+              const completedCountForThisEc = ec.tiers.filter(t => !!completedTasks[`EC${ec.num}-${t.tier}`]).length;
 
               return (
                 <div key={ec.num} className="p-5 rounded-3xl bg-zinc-900/40 border border-zinc-800 space-y-3">
@@ -680,18 +540,17 @@ export default function EternityTab() {
                     </span>
                   </div>
 
-                  {/* 5 Níveis de Dificuldade */}
                   <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-2.5 font-mono text-xs">
                     {ec.tiers.map((t) => {
                       const key = `EC${ec.num}-${t.tier}`;
-                      const isDone = !!completedEcs[key];
+                      const isDone = !!completedTasks[key];
 
                       return (
                         <button
                           key={t.tier}
                           role="checkbox"
                           aria-checked={isDone}
-                          onClick={() => toggleEcDifficulty(ec.num, t.tier)}
+                          onClick={() => toggleTask(key)}
                           className={`p-3 rounded-2xl border text-left flex flex-col justify-between space-y-2 transition-all focus:outline-none ${
                             isDone
                               ? "bg-yellow-950/30 border-yellow-500/40 text-zinc-400"
@@ -722,155 +581,6 @@ export default function EternityTab() {
                 </div>
               );
             })}
-          </div>
-        </div>
-      )}
-
-      {/* ========================================================================= */}
-      {/* 5. DILATAÇÃO, SUPERNOVAS & ÁRVORE DE DILATAÇÃO (DTP PASSO A PASSO) */}
-      {/* ========================================================================= */}
-      {subPage === "dilation" && (
-        <div className="space-y-6">
-          <div className="p-6 rounded-3xl bg-gradient-to-br from-cyan-950/40 via-zinc-900/70 to-zinc-950 border-2 border-cyan-500/30 shadow-2xl space-y-4">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-cyan-500/20 pb-3">
-              <div>
-                <span className="text-xs font-mono uppercase text-cyan-400 font-bold tracking-wider">
-                  Dilatação & Árvore de Dilatação (DT)
-                </span>
-                <h1 className="text-xl sm:text-2xl font-black text-white mt-0.5">
-                  Pontos da Árvore de Dilatação (DTP) & Builds
-                </h1>
-              </div>
-              <span className="text-[11px] font-mono px-3 py-1 rounded-full bg-cyan-500/20 text-cyan-300 border border-cyan-500/30 w-fit">
-                DTP Gasto: {totalDtpSpent}/65
-              </span>
-            </div>
-
-            <p className="text-xs sm:text-sm text-zinc-300 leading-relaxed">
-              Desbloqueada com <strong>50 ECs concluídos</strong> e <strong>81 Animais</strong>. A meta final da Eternidade é acumular <strong>1.08e2466 EP</strong> para desbloquear a <strong>Unidade (Unity)</strong>!
-            </p>
-
-            {/* Presets Finais de Endgame */}
-            <div className="space-y-2 pt-1">
-              <span className="text-xs font-mono font-bold text-cyan-300 block">Loadouts Finais Rápidos:</span>
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2 font-mono text-xs">
-                {ENDGAME_LOADOUTS.map((p) => (
-                  <div key={p.name} className="p-3 rounded-2xl bg-zinc-950 border border-zinc-800 flex flex-col justify-between space-y-2">
-                    <div>
-                      <strong className="text-cyan-300 block">{p.name}</strong>
-                      <span className="text-[10px] text-zinc-500 font-sans">{p.desc}</span>
-                    </div>
-                    <div className="flex items-center justify-between gap-2 pt-1 border-t border-zinc-800/60">
-                      <button
-                        onClick={() => applyPreset(p.code)}
-                        className="px-2 py-1 rounded-lg bg-cyan-950 hover:bg-cyan-900 border border-cyan-500/30 text-cyan-200 text-[10px] font-bold"
-                      >
-                        Carregar
-                      </button>
-                      <button
-                        onClick={() => copyToClipboard(p.code, p.name)}
-                        className="text-[10px] text-zinc-400 hover:text-white flex items-center gap-1"
-                      >
-                        {copiedCode === p.name ? <CheckCheck className="w-3 h-3 text-emerald-400" /> : <Copy className="w-3 h-3" />}
-                        {copiedCode === p.name ? "Copiado" : "Copiar"}
-                      </button>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </div>
-
-          {/* Tabela Passo a Passo Oficial (DTP 1 a 40) */}
-          <div className="p-6 rounded-3xl bg-zinc-900/40 border border-zinc-800 space-y-4">
-            <h3 className="text-sm font-bold text-white flex items-center gap-2">
-              <Table className="w-4 h-4 text-cyan-400" /> Tabela Sequencial da Árvore de Dilatação (DTP 1 a 40+)
-            </h3>
-
-            <div className="overflow-x-auto">
-              <table className="w-full text-left font-mono text-xs text-zinc-300">
-                <thead className="border-b border-zinc-800 text-zinc-500 uppercase text-[10px]">
-                  <tr>
-                    <th className="py-2.5">DTP</th>
-                    <th className="py-2.5">Ação / Foco</th>
-                    <th className="py-2.5">Código do Loadout</th>
-                    <th className="py-2.5">Alvo AP</th>
-                    <th className="py-2.5">Alvo SN</th>
-                    <th className="py-2.5">Alvo Σ</th>
-                    <th className="py-2.5 text-right">Ação</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-zinc-800/60">
-                  {DILATION_STEP_BY_STEP.map((row, idx) => (
-                    <tr key={idx} className="hover:bg-zinc-800/30 transition-colors">
-                      <td className="py-2 font-bold text-cyan-400">{row.dtp}</td>
-                      <td className="py-2 text-zinc-200 font-sans">{row.pick}</td>
-                      <td className="py-2 text-zinc-400 text-[11px]">{row.code}</td>
-                      <td className="py-2 text-purple-300">{row.ap}</td>
-                      <td className="py-2 text-amber-300">{row.sn}</td>
-                      <td className="py-2 text-indigo-300">{row.et}</td>
-                      <td className="py-2 text-right">
-                        <button
-                          onClick={() => applyPreset(row.code)}
-                          className="px-2 py-1 rounded bg-zinc-950 hover:bg-cyan-950 border border-zinc-800 hover:border-cyan-500/40 text-cyan-300 text-[10px]"
-                        >
-                          Usar
-                        </button>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </div>
-
-          {/* Grid Interativo de Upgrades da Árvore de Dilatação */}
-          <div className="p-6 rounded-3xl bg-zinc-900/40 border border-zinc-800 space-y-4">
-            <div className="flex justify-between items-center border-b border-zinc-800 pb-3">
-              <h3 className="text-sm font-bold text-white flex items-center gap-2">
-                <Network className="w-4 h-4 text-cyan-400" /> Alocador Interativo de DTP (13 DTUs)
-              </h3>
-              <button
-                onClick={() => setDtpAllocations({ "C-1": 1 })}
-                className="px-3 py-1 rounded-xl bg-zinc-900 hover:bg-zinc-800 border border-zinc-700 text-zinc-300 font-mono text-xs flex items-center gap-1.5"
-              >
-                <RefreshCw className="w-3.5 h-3.5" /> Respec DTP
-              </button>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-              {DILATION_TREE_UPGRADES.map((dtu) => {
-                const current = dtpAllocations[dtu.id] || 0;
-                return (
-                  <div key={dtu.id} className="p-4 rounded-2xl bg-zinc-950 border border-zinc-800/80 space-y-2 font-mono text-xs">
-                    <div className="flex justify-between items-start">
-                      <div>
-                        <strong className="text-zinc-200 block">{dtu.name}</strong>
-                        <span className="text-[10px] text-zinc-500 font-sans">{dtu.branch}</span>
-                      </div>
-                      <span className="px-2 py-0.5 rounded-lg bg-cyan-950 border border-cyan-500/40 text-cyan-300 font-bold">
-                        {current}/{dtu.max}
-                      </span>
-                    </div>
-                    <p className="text-[11px] text-zinc-400 font-sans leading-relaxed">{dtu.desc}</p>
-                    <div className="flex gap-1.5 pt-1">
-                      <button
-                        onClick={() => handleDtpChange(dtu.id, -1)}
-                        className="w-8 h-7 rounded-lg bg-zinc-900 hover:bg-zinc-800 border border-zinc-700 text-white font-bold flex items-center justify-center"
-                      >
-                        -
-                      </button>
-                      <button
-                        onClick={() => handleDtpChange(dtu.id, 1)}
-                        className="flex-1 h-7 rounded-lg bg-cyan-600/30 hover:bg-cyan-600/50 border border-cyan-500/40 text-cyan-200 font-bold flex items-center justify-center"
-                      >
-                        +1 DTP
-                      </button>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
           </div>
         </div>
       )}

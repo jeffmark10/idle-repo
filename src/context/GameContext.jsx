@@ -2,11 +2,11 @@ import React, { createContext, useContext, useState, useEffect } from "react";
 
 const GameContext = createContext();
 
-const STORAGE_KEY = "REVOLUTION_IDLE_GLOBAL_STATE_V2";
+const STORAGE_KEY = "REVOLUTION_IDLE_GLOBAL_STATE_V3";
 
-// Lista de chaves legadas a serem purgadas do localStorage
 const LEGACY_STORAGE_KEYS = [
   "REVOLUTION_IDLE_USER_STATE_V1",
+  "REVOLUTION_IDLE_GLOBAL_STATE_V2",
   "rev_score",
   "checkedTasks",
   "sim_mineralGrid",
@@ -19,23 +19,23 @@ const LEGACY_STORAGE_KEYS = [
   "infProgress"
 ];
 
+// Estado Inicial Limpo (Sem código de Praga/Tarô/Minerais/Singularidade)
 const INITIAL_STATE = {
   profile: {
-    currentTab: "revo", // revo | infinity | eternity | dilation | macros | unity | minerals | tarot | plague | singularity
-    searchQuery: "",
+    currentTab: "revo",
     autoSave: true
   },
   stats: {
-    score: "1e10",
-    promoLevel: 10,
+    score: "0",
+    promoLevel: 1,
     ip: "0",
     ep: "0",
     dp: "0",
-    eternities: 1,
+    eternities: 0,
     supernovas: 0,
-    stars: 1,
+    stars: 0,
     starBaseUpgrades: 0,
-    lab: { base: 10, mult: 10, power: 10 },
+    lab: { base: 1, mult: 1, power: 1 },
     rpAllocations: {
       ipGain: 0,
       ascPower: 0,
@@ -45,17 +45,15 @@ const INITIAL_STATE = {
       commonExp: 0
     }
   },
-  completedTasks: {}, // Armazena ICs ("IC1"), ECs ("EC1-1"), Conquistas ("ACH_005")
+  completedTasks: {},
   dilationTreeAllocations: { "C-1": 1 },
   savedLoadouts: {}
 };
 
 export function GameProvider({ children }) {
   const [gameState, setGameState] = useState(() => {
-    // 1. Limpeza de chaves legadas isoladas
     LEGACY_STORAGE_KEYS.forEach(k => localStorage.removeItem(k));
 
-    // 2. Carregamento do estado unificado
     const saved = localStorage.getItem(STORAGE_KEY);
     if (saved) {
       try {
@@ -75,65 +73,47 @@ export function GameProvider({ children }) {
     return INITIAL_STATE;
   });
 
-  // Persistência automática no localStorage
   useEffect(() => {
     if (gameState.profile.autoSave) {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(gameState));
     }
   }, [gameState]);
 
-  // Atualizador Atômico de Estatísticas
   const updateStat = (key, value) => {
     setGameState(prev => ({
       ...prev,
-      stats: {
-        ...prev.stats,
-        [key]: value
-      }
+      stats: { ...prev.stats, [key]: value }
     }));
   };
 
-  // Atualizador de Objetos Aninhados (ex: Lab)
   const updateNestedStat = (category, key, value) => {
     setGameState(prev => ({
       ...prev,
       stats: {
         ...prev.stats,
-        [category]: {
-          ...prev.stats[category],
-          [key]: value
-        }
+        [category]: { ...prev.stats[category], [key]: value }
       }
     }));
   };
 
-  // Alternar conclusão de tarefas/desafios
   const toggleTask = (taskId) => {
     setGameState(prev => ({
       ...prev,
-      completedTasks: {
-        ...prev.completedTasks,
-        [taskId]: !prev.completedTasks[taskId]
-      }
+      completedTasks: { ...prev.completedTasks, [taskId]: !prev.completedTasks[taskId] }
     }));
   };
 
-  // Alocação de DTP na Árvore de Dilatação
   const updateDtpAllocation = (nodeId, delta) => {
     setGameState(prev => {
       const current = prev.dilationTreeAllocations[nodeId] || 0;
       const next = Math.max(0, Math.min(5, current + delta));
       return {
         ...prev,
-        dilationTreeAllocations: {
-          ...prev.dilationTreeAllocations,
-          [nodeId]: next
-        }
+        dilationTreeAllocations: { ...prev.dilationTreeAllocations, [nodeId]: next }
       };
     });
   };
 
-  // Aplicar Preset de Dilatação
   const applyDtpPreset = (presetCode) => {
     const parts = presetCode.split(";");
     const newAlloc = {};
@@ -156,7 +136,6 @@ export function GameProvider({ children }) {
     }));
   };
 
-  // Respec da Árvore de Dilatação
   const respecDilationTree = () => {
     setGameState(prev => ({
       ...prev,
@@ -164,18 +143,13 @@ export function GameProvider({ children }) {
     }));
   };
 
-  // Mudança de Aba Ativa
   const setCurrentTab = (tabId) => {
     setGameState(prev => ({
       ...prev,
-      profile: {
-        ...prev.profile,
-        currentTab: tabId
-      }
+      profile: { ...prev.profile, currentTab: tabId }
     }));
   };
 
-  // RESET GLOBAL COMPLETO (Purga 100% do estado e storage)
   const resetAllData = () => {
     localStorage.removeItem(STORAGE_KEY);
     LEGACY_STORAGE_KEYS.forEach(k => localStorage.removeItem(k));
