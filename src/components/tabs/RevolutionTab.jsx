@@ -1,482 +1,588 @@
-import React, { useState, useMemo } from "react";
+import React, { useState } from "react";
 import { 
-  CircleDot, Calculator, Trophy, Gift, 
-  ArrowUpCircle, ShoppingBag, Lightbulb, 
-  Flag, Keyboard, Edit3, Zap, BookOpen, Layers
+  CircleDot, Gift, ArrowUpCircle, ShoppingBag, 
+  Lightbulb, Keyboard, Zap, Compass, CheckCircle2, 
+  Sparkles, Flame, Calendar, RefreshCw, TrendingUp, 
+  HelpCircle, Target, Clock, Trophy, Sliders, Check
 } from "lucide-react";
-import StatCard from "../ui/StatCard";
-import { CIRCLES_DATA, DAILY_REWARDS_DATA } from "../../data/gameData";
-import { parseIncrementalNumber, formatScientific } from "../../utils/numberParser";
-import { calculateLeaderboardScore } from "../../utils/leaderboardMath";
+import { CIRCLES_DATA, DAILY_REWARDS_DATA, SPECIAL_ACHIEVEMENTS } from "../../data/gameData";
+import { useGame } from "../../context/GameContext";
+import SubNavTabs from "../common/SubNavTabs";
 
-export default function RevolutionTab({ score, onScoreChange }) {
-  const [subSection, setSubSection] = useState("overview");
+export default function RevolutionTab() {
+  const { gameState, updateStat, toggleTask } = useGame();
+  const [subSection, setSubSection] = useState("circles");
 
-  const parsedScore = useMemo(() => parseIncrementalNumber(score), [score]);
-  
-  // Controle de Nível de Promoção
-  const [promoLevelInput, setPromoLevelInput] = useState("10");
-  const parsedPromoLevel = useMemo(() => {
-    const res = parseIncrementalNumber(promoLevelInput);
-    return res.isValid ? Math.max(1, res.value) : 10;
-  }, [promoLevelInput]);
-
-  // Fórmulas de Prestígio (wiki.gg)
-  const pMult = useMemo(() => {
-    const s = parsedScore.value;
-    if (s < 1e3) return 1;
-    return 2.56 * Math.pow(Math.max(0, Math.log10(s / 1e3)), 2.25);
-  }, [parsedScore.value]);
-
-  const pExp = useMemo(() => {
-    const s = parsedScore.value;
-    if (s < 1e5) return 1;
-    return 1 + Math.max(0, Math.log10(s / 1e5)) / 225;
-  }, [parsedScore.value]);
-
-  // Fórmulas de Promoção (wiki.gg)
-  const promoXp = Math.floor(Math.pow(Math.max(0, pMult / 1000), 0.75));
-  const p4 = 1 + 0.05 * Math.pow(parsedPromoLevel, 0.48);
-  const p1 = p4 * (Math.floor(Math.pow(parsedPromoLevel, 1.5)) + 1);
-  const p2 = p4 * (1 + Math.sqrt(parsedPromoLevel));
-  const p3 = p4 * (10 + Math.pow(parsedPromoLevel, 0.82));
-
-  // Sequência Diária (Streak)
-  const [streakDay, setStreakDay] = useState(10);
+  const streakDay = gameState.stats.streakDay ?? 10;
   const streakBonus = Math.min(50, streakDay * 5);
+  const completedTasks = gameState.completedTasks || {};
 
-  // Simulador de Leaderboard
-  const [lbStats] = useState({
-    maxExponent: 1.5,
-    maxInfinites: 50,
-    maxIP: 1e20,
-    maxChallenges: 9,
-    maxStars: 8,
-    eternities: 100,
-    maxEP: 1e10,
-    maxAnimals: 20,
-    maxLabLevel: 100,
-    maxSupernova: 10,
-    maxDP: 1e5,
-    maxDTP: 13,
-    maxUnities: 5,
-    maxZodiacLevel: 50,
-    maxTrialCount: 6,
-    maxAttackLevel: 100
-  });
-
-  const calculatedLbScore = useMemo(() => {
-    return calculateLeaderboardScore({
-      ...lbStats,
-      maxScore: parsedScore.value
-    });
-  }, [lbStats, parsedScore.value]);
-
-  const updatePromoLevel = (val) => {
-    setPromoLevelInput(String(val));
-  };
+  const REVO_TABS = [
+    { id: "circles", label: "1. Mecânicas Base & Círculos", icon: CircleDot },
+    { id: "guide", label: "2. Roteiro Passo a Passo", icon: Compass },
+    { id: "automations", label: "3. Guia de Automação", icon: Sliders },
+    { id: "achievements", label: "4. Conquistas Especiais", icon: Trophy },
+    { id: "timeflux", label: "5. Time Flux & Almas", icon: Clock },
+    { id: "rewards", label: "6. Recompensas Diárias", icon: Gift },
+  ];
 
   return (
     <div className="space-y-6">
-      {/* Menu Superior de Sub-seções */}
-      <div className="flex items-center gap-1.5 p-1.5 rounded-2xl bg-zinc-900/60 border border-zinc-800 overflow-x-auto scrollbar-none font-mono text-xs">
-        {[
-          { id: "overview", label: "1. Visão Geral & Guia", icon: BookOpen },
-          { id: "calculator", label: "2. Círculos & Calculador de Prestígio", icon: Calculator },
-          { id: "rewards", label: "3. Recompensas & Tabela de Líderes", icon: Gift },
-        ].map((tab) => {
-          const Icon = tab.icon;
-          const isActive = subSection === tab.id;
-          return (
-            <button
-              key={tab.id}
-              onClick={() => setSubSection(tab.id)}
-              className={`px-3.5 py-2 rounded-xl font-bold transition-all shrink-0 flex items-center gap-2 ${
-                isActive
-                  ? "bg-red-600 text-white shadow-md shadow-red-900/30"
-                  : "text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800/60"
-              }`}
-            >
-              <Icon className="w-3.5 h-3.5" />
-              <span>{tab.label}</span>
-            </button>
-          );
-        })}
-      </div>
+      <SubNavTabs
+        tabs={REVO_TABS}
+        activeTab={subSection}
+        onSelectTab={setSubSection}
+        colorTheme="red"
+      />
 
-      {/* ========================================================================= */}
-      {/* SUB-SEÇÃO 1: VISÃO GERAL & GUIA DE INICIANTE */}
-      {/* ========================================================================= */}
-      {subSection === "overview" && (
+      {/* 1. MECÂNICAS BASE & CÍRCULOS */}
+      {subSection === "circles" && (
         <div className="space-y-6">
-          <div className="p-6 rounded-3xl bg-gradient-to-br from-red-950/40 via-zinc-900/70 to-zinc-950 border-2 border-red-500/30 shadow-2xl space-y-4">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-red-500/20 pb-3">
+          <div className="p-6 sm:p-8 rounded-3xl bg-gradient-to-br from-red-950/40 via-zinc-900/80 to-zinc-950 border-2 border-red-500/30 shadow-2xl space-y-3">
+            <div className="flex items-center gap-3 border-b border-red-500/20 pb-3">
+              <div className="w-10 h-10 rounded-2xl bg-red-950 border border-red-500/40 flex items-center justify-center text-red-400 font-black">
+                <CircleDot className="w-5 h-5" />
+              </div>
               <div>
                 <span className="text-xs font-mono uppercase text-red-400 font-bold tracking-wider">
-                  Guia do Iniciante • Começando
+                  Guia Oficial de Mecânicas • Revolução
                 </span>
-                <h1 className="text-xl sm:text-2xl font-black text-white mt-0.5">
-                  Primeiros Passos no Revolution Idle
-                </h1>
+                <h2 className="text-xl sm:text-2xl font-black text-white">
+                  Mecânicas Básicas & Estratégias do Jogo
+                </h2>
               </div>
-              <span className="text-[11px] font-mono px-3 py-1 rounded-full bg-red-500/20 text-red-300 border border-red-500/30 w-fit">
-                1º Infinito: ~12h
-              </span>
             </div>
-
-            <p className="text-xs sm:text-sm text-zinc-300 leading-relaxed">
-              Bem-vindo ao <strong>Revolution Idle</strong>! O início pode parecer lento, mas as mecânicas se abrem bastante conforme você avança. Seu primeiro Infinity exige <strong>1.79e308 de Pontuação</strong> e aproximadamente <strong>1e42 (1 TDC) de Prestígio</strong>.
+            <p className="text-xs sm:text-sm text-zinc-300 leading-relaxed max-w-4xl">
+              Entenda os conceitos principais de <strong>Pontuação, Multiplicadores, Níveis, Ascensão, Prestígio e Promoções</strong>, além dos momentos ideais para executar cada ação.
             </p>
+          </div>
 
-            {/* 4 Mecânicas Centrais */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-3 pt-1">
-              <div className="p-3.5 rounded-2xl bg-zinc-950/80 border border-zinc-800 space-y-1">
-                <span className="text-red-400 font-bold text-xs flex items-center gap-1.5">
-                  <CircleDot className="w-3.5 h-3.5" /> Cores (Círculos)
-                </span>
-                <p className="text-xs text-zinc-400 leading-relaxed">
-                  10 círculos de produção. Vermelho é o mais rápido e Branco o mais lento. Desbloqueie novas cores comprando 5 níveis da anterior.
-                </p>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 font-sans text-xs">
+            <div className="p-5 rounded-3xl bg-zinc-900/50 border border-zinc-800 space-y-2.5">
+              <div className="flex items-center gap-2 font-mono">
+                <div className="p-1.5 rounded-lg bg-red-950 border border-red-500/40 text-red-400 font-bold">
+                  <CircleDot className="w-4 h-4" />
+                </div>
+                <strong className="text-sm font-bold text-white">Pontuação (Score ⵙ)</strong>
               </div>
+              <p className="text-zinc-400 leading-relaxed">
+                É a <strong>moeda principal do jogo</strong>, utilizada por quase todas as mecânicas. Você ganha pontos cada vez que uma cor completa uma volta inteira (revolução).
+              </p>
+            </div>
 
-              <div className="p-3.5 rounded-2xl bg-zinc-950/80 border border-zinc-800 space-y-1">
-                <span className="text-amber-400 font-bold text-xs flex items-center gap-1.5">
-                  <ArrowUpCircle className="w-3.5 h-3.5" /> Ascensões
-                </span>
-                <p className="text-xs text-zinc-400 leading-relaxed">
-                  Reseta o círculo para o nível 5, concede +10 no nível máximo e multiplica o Mult Gain por 10x por padrão.
-                </p>
+            <div className="p-5 rounded-3xl bg-zinc-900/50 border border-zinc-800 space-y-2.5">
+              <div className="flex items-center gap-2 font-mono">
+                <div className="p-1.5 rounded-lg bg-orange-950 border border-orange-500/40 text-orange-400 font-bold">
+                  <TrendingUp className="w-4 h-4" />
+                </div>
+                <strong className="text-sm font-bold text-white">Multiplicador (Mult)</strong>
               </div>
+              <p className="text-zinc-400 leading-relaxed">
+                Multiplica sua pontuação a cada revolução. Cada cor aumenta seu número próprio no topo da tela. O valor final recebido é o resultado da multiplicação de todas as cores combinadas.
+              </p>
+            </div>
 
-              <div className="p-3.5 rounded-2xl bg-zinc-950/80 border border-zinc-800 space-y-1">
-                <span className="text-orange-400 font-bold text-xs flex items-center gap-1.5">
-                  <Calculator className="w-3.5 h-3.5" /> Prestígio (1e10 Score)
-                </span>
-                <p className="text-xs text-zinc-400 leading-relaxed">
-                  Redefine cores e ascensões, concedendo P.Mult (multiplicador estático) e P.Expoente (escala logarítmica potente).
-                </p>
+            <div className="p-5 rounded-3xl bg-zinc-900/50 border border-zinc-800 space-y-2.5">
+              <div className="flex items-center gap-2 font-mono">
+                <div className="p-1.5 rounded-lg bg-yellow-950 border border-yellow-500/40 text-yellow-400 font-bold">
+                  <Zap className="w-4 h-4" />
+                </div>
+                <strong className="text-sm font-bold text-white">Nível dos Círculos</strong>
               </div>
+              <p className="text-zinc-400 leading-relaxed">
+                Cada cor possui seu próprio nível. Ao aumentá-lo usando pontos, você <strong>aumenta a velocidade de rotação (voltas/s)</strong> da cor correspondente e se aproxima das Ascensões.
+              </p>
+            </div>
 
-              <div className="p-3.5 rounded-2xl bg-zinc-950/80 border border-zinc-800 space-y-1">
-                <span className="text-purple-400 font-bold text-xs flex items-center gap-1.5">
-                  <Zap className="w-3.5 h-3.5" /> Promoções (1k P.Mult)
-                </span>
-                <p className="text-xs text-zinc-400 leading-relaxed">
-                  Reseta tudo por bônus permanentes em 4 categorias essenciais (Mult Gain, Voltas/s, Ascensão e Poder).
-                </p>
+            <div className="p-5 rounded-3xl bg-zinc-900/50 border border-zinc-800 space-y-2.5">
+              <div className="flex items-center gap-2 font-mono">
+                <div className="p-1.5 rounded-lg bg-amber-950 border border-amber-500/40 text-amber-400 font-bold">
+                  <ArrowUpCircle className="w-4 h-4" />
+                </div>
+                <strong className="text-sm font-bold text-white">Ascensão (Botão "A")</strong>
               </div>
+              <p className="text-zinc-400 leading-relaxed">
+                Ocorre ao atingir o nível máximo da cor. Ao clicar no <strong>"A"</strong>, o nível da cor é redefinido para 5, mas seu ganho de multiplicador por volta sobe em <strong>10x (Asc. Power)</strong> e o teto máximo de nível aumenta em +10.
+              </p>
+            </div>
+
+            <div className="p-5 rounded-3xl bg-zinc-900/50 border border-purple-500/40 text-purple-400 font-bold">
+              <div className="flex items-center gap-2 font-mono">
+                <div className="p-1.5 rounded-lg bg-purple-950 border border-purple-500/40 text-purple-400 font-bold">
+                  <RefreshCw className="w-4 h-4" />
+                </div>
+                <strong className="text-sm font-bold text-white">Prestígio (1e10 Score)</strong>
+              </div>
+              <p className="text-zinc-400 leading-relaxed">
+                Redefine a pontuação acumulada, níveis e ascensões de todas as cores. Em troca, concede <strong>P.Mult</strong> (multiplicador geral) e <strong>P.Expoente</strong> (potência exponencial sobre o ganho total).
+              </p>
+            </div>
+
+            <div className="p-5 rounded-3xl bg-zinc-900/50 border border-cyan-500/40 text-cyan-400 font-bold">
+              <div className="flex items-center gap-2 font-mono">
+                <div className="p-1.5 rounded-lg bg-cyan-950 border border-cyan-500/40 text-cyan-400 font-bold">
+                  <Sparkles className="w-4 h-4" />
+                </div>
+                <strong className="text-sm font-bold text-white">Promoções (1k P.Mult)</strong>
+              </div>
+              <p className="text-zinc-400 leading-relaxed">
+                Reseta todo o progresso (incluindo Prestígio) para conceder bônus permanentes em 4 áreas: <strong>#1 Ganho de Mult</strong>, <strong>#2 Velocidade de Voltas</strong>, <strong>#3 Poder de Ascensão</strong> e <strong>#4 Poder de Promoção</strong>.
+              </p>
             </div>
           </div>
 
-          {/* Cards de Dicas Rápidas */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 font-mono text-xs">
-            <div className="p-4 rounded-2xl bg-amber-950/20 border border-amber-500/30 text-amber-200 space-y-1">
-              <div className="flex items-center gap-1.5 font-bold text-amber-400 text-xs">
-                <Lightbulb className="w-4 h-4" /> Conquista Grátis
-              </div>
-              <p className="text-[11px] font-sans text-zinc-300">
-                Abra a aba "Créditos" para liberar a Conquista #005 ("Verifique o Dev") e ganhar bônus multiplicador imediato.
-              </p>
-            </div>
-
-            <div className="p-4 rounded-2xl bg-blue-950/20 border border-blue-500/30 text-blue-200 space-y-1">
-              <div className="flex items-center gap-1.5 font-bold text-blue-400 text-xs">
-                <Flag className="w-4 h-4 text-blue-400" /> Ponto de Controle
-              </div>
-              <p className="text-[11px] font-sans text-zinc-300">
-                Faça o 1º Prestígio em 10x-20x P.Mult. Nos seguintes, busque saltos multiplicadores de 100x a 1000x.
-              </p>
-            </div>
-
-            <div className="p-4 rounded-2xl bg-zinc-950 border border-zinc-800 text-zinc-300 space-y-1">
-              <div className="flex items-center gap-1.5 font-bold text-emerald-400 text-xs">
-                <Keyboard className="w-4 h-4 text-emerald-400" /> Atalhos Úteis
-              </div>
-              <p className="text-[11px] font-sans text-zinc-400">
-                <strong className="text-white">B</strong>: Compra Cores | <strong className="text-white">P</strong>: Prestígio | <strong className="text-white">1-4</strong>: Promoções. Ative a notação científica.
-              </p>
-            </div>
-
-            <div className="p-4 rounded-2xl bg-purple-950/20 border border-purple-500/30 text-purple-200 space-y-1">
-              <div className="flex items-center gap-1.5 font-bold text-purple-400 text-xs">
-                <ShoppingBag className="w-4 h-4" /> Compras na Loja
-              </div>
-              <p className="text-[11px] font-sans text-zinc-300">
-                Bônus de loja são cosméticos/opcionais. Economize Almas e use TF 2x caso queira acelerar períodos de espera.
-              </p>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* ========================================================================= */}
-      {/* SUB-SEÇÃO 2: CÍRCULOS & CALCULADOR DE PRESTÍGIO */}
-      {/* ========================================================================= */}
-      {subSection === "calculator" && (
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
-          {/* Tabela dos 10 Círculos */}
-          <div className="lg:col-span-6 p-5 rounded-3xl bg-zinc-900/40 border border-zinc-800 space-y-4">
+          <div className="p-6 rounded-3xl bg-zinc-900/40 border border-zinc-800 space-y-4">
             <div className="flex items-center justify-between border-b border-zinc-800 pb-3">
-              <h2 className="text-sm font-bold text-white flex items-center gap-2">
-                <CircleDot className="w-4 h-4 text-red-400" /> Tabela dos 10 Círculos de Produção
-              </h2>
-              <span className="text-[11px] font-mono text-zinc-500">Ordem: Vermelho → Branco</span>
+              <div>
+                <h3 className="text-sm font-bold text-white flex items-center gap-2 font-mono">
+                  <CircleDot className="w-4 h-4 text-red-400" /> Tabela de Custos e Velocidades dos 10 Círculos
+                </h3>
+                <span className="text-[11px] font-mono text-zinc-500">Ordem de Desbloqueio: Vermelho (Rápido) → Branco (Lento)</span>
+              </div>
             </div>
 
             <div className="overflow-x-auto">
               <table className="w-full text-left text-xs text-zinc-300 font-mono">
-                <thead className="border-b border-zinc-800 text-zinc-400 uppercase">
+                <thead className="border-b border-zinc-800 text-zinc-400 uppercase text-[10px]">
                   <tr>
-                    <th className="py-2">Cor</th>
-                    <th className="py-2">Custo Inicial</th>
-                    <th className="py-2">Mult. Custo</th>
-                    <th className="py-2">Voltas/s Base</th>
+                    <th className="py-2.5">Cor</th>
+                    <th className="py-2.5">Custo Inicial (Nível 0)</th>
+                    <th className="py-2.5">Multiplicador de Custo</th>
+                    <th className="py-2.5">Voltas/s Base</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-zinc-800/60">
                   {CIRCLES_DATA.map((c) => (
                     <tr key={c.name} className="hover:bg-zinc-800/30 transition-colors">
                       <td className={`py-2 font-bold ${c.color}`}>{c.name}</td>
-                      <td className="py-2 text-zinc-300">{formatScientific(c.initialCost)} ⵙ</td>
-                      <td className="py-2 text-zinc-400">+{c.costMult.toFixed(2)}x</td>
+                      <td className="py-2 text-zinc-300">{c.initialCost >= 1e6 ? c.initialCost.toExponential(0) : c.initialCost.toLocaleString("pt-BR")} ⵙ</td>
+                      <td className="py-2 text-zinc-400">+{c.costMult.toFixed(2)}x (+0.1 p/ Ascensão)</td>
                       <td className="py-2 text-emerald-400">+{c.baseSpeed.toFixed(3)}/s</td>
                     </tr>
                   ))}
                 </tbody>
               </table>
             </div>
+          </div>
+        </div>
+      )}
 
-            <div className="p-4 rounded-2xl bg-zinc-950 border border-zinc-800/80 space-y-1.5 text-xs text-zinc-300">
-              <div className="font-bold text-white flex items-center gap-1.5">
-                <ArrowUpCircle className="w-4 h-4 text-amber-400" /> Dicas de Ascensão Estratégica
+      {/* 2. ROTEIRO PASSO A PASSO */}
+      {subSection === "guide" && (
+        <div className="space-y-6">
+          <div className="p-6 sm:p-8 rounded-3xl bg-gradient-to-br from-red-950/40 via-zinc-900/70 to-zinc-950 border-2 border-red-500/30 shadow-2xl space-y-4">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-red-500/20 pb-4">
+              <div>
+                <span className="text-xs font-mono uppercase text-red-400 font-bold tracking-wider">
+                  Trilha de Progressão • Pré-Infinito
+                </span>
+                <h1 className="text-xl sm:text-2xl font-black text-white mt-0.5">
+                  Roteiro Completo: O Caminho até o 1º Infinito
+                </h1>
               </div>
-              <p className="text-[11px] text-zinc-400 leading-relaxed font-sans">
-                Quando os círculos atingirem o nível máximo, considere esperar até que 1 ou 2 adicionais estejam prontos. Isso mantém a velocidade da corrida, já que círculos ascendidos resetam para o nível 5. A partir do nível 10 pós-ascensão, o crescimento acelera drasticamente.
-              </p>
+              <div className="flex items-center gap-2 font-mono text-xs">
+                <span className="px-3 py-1.5 rounded-full bg-red-950 border border-red-500/40 text-red-300 font-bold flex items-center gap-1.5">
+                  <Clock className="w-3.5 h-3.5" /> Duração Média: ~12 Horas
+                </span>
+              </div>
+            </div>
+
+            <p className="text-xs sm:text-sm text-zinc-300 leading-relaxed max-w-4xl">
+              O início do <strong>Revolution Idle</strong> é sequencial e dividido em <strong>4 marcos naturais</strong>. Siga os passos na ordem abaixo para evitar travamentos e alcançar o limite de <strong>1.79e308 Score ⵙ</strong> com velocidade.
+            </p>
+
+            <div className="p-3 bg-amber-950/30 border border-amber-500/30 rounded-2xl flex items-center justify-between gap-3 font-mono text-xs">
+              <div className="flex items-center gap-2 text-amber-200">
+                <Lightbulb className="w-4 h-4 text-amber-400 shrink-0" />
+                <span><strong>Primeiro Passo Gratuito:</strong> Abra a aba "Créditos" à direita no jogo para liberar a <strong>Conquista #005</strong> e ganhar +0.01x de bônus imediato!</span>
+              </div>
             </div>
           </div>
 
-          {/* Calculador de Prestígio & Promoções Expandido */}
-          <div className="lg:col-span-6 p-6 rounded-3xl bg-gradient-to-b from-orange-950/30 via-zinc-900/60 to-zinc-950 border-2 border-orange-500/40 shadow-2xl shadow-orange-950/30 space-y-5">
-            <div className="flex items-center justify-between border-b border-orange-500/20 pb-3">
-              <h2 className="text-base font-extrabold text-white flex items-center gap-2">
-                <Calculator className="w-5 h-5 text-orange-400" /> Calculador de Prestígio & Promoções
-              </h2>
-              <span className="text-xs font-mono font-bold px-2.5 py-1 rounded-full bg-orange-500/20 text-orange-300 border border-orange-500/30">
-                Live Preview
-              </span>
+          <div className="space-y-4 font-sans text-xs">
+            {/* ETAPA 1 */}
+            <div className="p-6 rounded-3xl bg-zinc-900/60 border border-zinc-800 space-y-4 relative overflow-hidden">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-zinc-800/80 pb-3">
+                <div className="flex items-center gap-3">
+                  <div className="w-8 h-8 rounded-xl bg-red-950 border border-red-500/40 text-red-400 font-mono font-bold flex items-center justify-center text-sm shrink-0">
+                    1
+                  </div>
+                  <div>
+                    <h3 className="text-sm sm:text-base font-bold text-white">Etapa 1: A Rampa Inicial (0 a 10 Bilhões)</h3>
+                    <span className="text-[11px] text-zinc-400 font-mono">Foco: Círculos Baratos, Níveis e Primeiras Ascensões</span>
+                  </div>
+                </div>
+                <span className="px-2.5 py-1 rounded-full bg-zinc-950 border border-zinc-800 text-zinc-400 font-mono text-[11px] w-fit">
+                  Alvo: 1e10 Score ⵙ
+                </span>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                <div className="p-3.5 rounded-2xl bg-zinc-950 border border-zinc-800/80 space-y-1.5">
+                  <strong className="text-zinc-200 flex items-center gap-1.5 font-mono text-xs">
+                    <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" /> Como Comprar Círculos:
+                  </strong>
+                  <p className="text-zinc-400 leading-relaxed">
+                    Priorize sempre os círculos menores (Vermelho e Laranja). Desbloqueie uma nova cor comprando 5 níveis da anterior, mas só compre o primeiro nível da nova cor quando seu saldo for o <strong>dobro do preço dela</strong>.
+                  </p>
+                </div>
+
+                <div className="p-3.5 rounded-2xl bg-zinc-950 border border-zinc-800/80 space-y-1.5">
+                  <strong className="text-zinc-200 flex items-center gap-1.5 font-mono text-xs">
+                    <ArrowUpCircle className="w-3.5 h-3.5 text-amber-400" /> A Regra da Ascensão (Botão "A"):
+                  </strong>
+                  <p className="text-zinc-400 leading-relaxed">
+                    Ascender multiplica o ganho por <strong>10x</strong>, mas reduz o nível da cor para 5. <strong>Não ascenda imediatamente se for sua única cor rápida:</strong> espere ter uma segunda cor pronta para não desacelerar sua produção.
+                  </p>
+                </div>
+              </div>
             </div>
 
-            <div className="space-y-4 font-mono">
-              {/* Pontuação Atual */}
-              <div className="p-4 rounded-2xl bg-zinc-950/80 border border-zinc-800 space-y-2.5">
-                <div className="flex justify-between items-center text-xs text-zinc-300">
-                  <label htmlFor="revScoreInputEl" className="font-bold flex items-center gap-1.5">
-                    <Edit3 className="w-3.5 h-3.5 text-orange-400" /> Pontuação Atual (Score ⵙ):
-                  </label>
-                  <span className="text-xs text-zinc-400 font-sans">
-                    Valor: <strong className="text-orange-300 font-mono">{formatScientific(parsedScore.value)} ⵙ</strong>
-                  </span>
+            {/* ETAPA 2 */}
+            <div className="p-6 rounded-3xl bg-zinc-900/60 border border-zinc-800 space-y-4 relative overflow-hidden">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-zinc-800/80 pb-3">
+                <div className="flex items-center gap-3">
+                  <div className="w-8 h-8 rounded-xl bg-orange-950 border border-orange-500/40 text-orange-400 font-mono font-bold flex items-center justify-center text-sm shrink-0">
+                    2
+                  </div>
+                  <div>
+                    <h3 className="text-sm sm:text-base font-bold text-white">Etapa 2: A Escala de Prestígio (P.Mult)</h3>
+                    <span className="text-[11px] text-zinc-400 font-mono">Foco: Multiplicadores em Ordens de Magnitude</span>
+                  </div>
                 </div>
-
-                <input
-                  id="revScoreInputEl"
-                  type="text"
-                  value={score}
-                  onChange={(e) => onScoreChange(e.target.value)}
-                  placeholder="Ex: 1e10, 500k, 1e42"
-                  className={`w-full bg-zinc-900 border rounded-xl px-3 py-2 text-sm text-white font-mono focus:outline-none ${
-                    parsedScore.isValid ? "border-orange-500/40 focus:border-orange-400" : "border-red-500"
-                  }`}
-                />
-
-                <div className="flex gap-1.5 flex-wrap pt-0.5">
-                  {["1e10", "1e12", "1e15", "1e20", "1e30", "1e42", "1.79e308"].map((val) => (
-                    <button
-                      key={val}
-                      onClick={() => onScoreChange(val)}
-                      className="px-2 py-1 rounded-lg bg-zinc-900 hover:bg-orange-900/40 text-[10px] text-zinc-300 border border-zinc-800 transition-colors"
-                    >
-                      {val}
-                    </button>
-                  ))}
-                </div>
+                <span className="px-2.5 py-1 rounded-full bg-zinc-950 border border-zinc-800 text-zinc-400 font-mono text-[11px] w-fit">
+                  Alvo: 1.000x P.Mult
+                </span>
               </div>
 
-              {/* Cards de Resultados de Prestígio */}
-              <div className="grid grid-cols-3 gap-2">
-                <div className="p-3 rounded-2xl bg-zinc-950 border border-orange-500/30 text-center space-y-0.5">
-                  <span className="text-[10px] text-zinc-400 font-bold uppercase block">P.Mult</span>
-                  <strong className="text-xs sm:text-sm text-orange-400 font-black">
-                    x{formatScientific(pMult)}
-                  </strong>
-                </div>
-
-                <div className="p-3 rounded-2xl bg-zinc-950 border border-amber-500/30 text-center space-y-0.5">
-                  <span className="text-[10px] text-zinc-400 font-bold uppercase block">P.Expoente</span>
-                  <strong className="text-xs sm:text-sm text-amber-300 font-black">
-                    ^{pExp.toFixed(4)}
-                  </strong>
-                </div>
-
-                <div className="p-3 rounded-2xl bg-orange-950/40 border-2 border-emerald-500/50 text-center space-y-0.5">
-                  <span className="text-[10px] text-zinc-300 font-bold uppercase block">EXP Promoção</span>
-                  <strong className="text-xs sm:text-sm text-emerald-400 font-black">
-                    +{formatScientific(promoXp)}
-                  </strong>
-                </div>
-              </div>
-
-              {/* Nível de Promoção (L) */}
-              <div className="p-4 rounded-2xl bg-zinc-950/80 border border-zinc-800 space-y-2.5">
-                <div className="flex justify-between items-center text-xs text-zinc-300">
-                  <label htmlFor="promoLevelInputEl" className="font-bold flex items-center gap-1.5">
-                    <Edit3 className="w-3.5 h-3.5 text-orange-400" /> Nível da Promoção (L):
-                  </label>
-                  <span className="text-sm text-orange-300 font-extrabold bg-orange-950/60 px-2.5 py-0.5 rounded-lg border border-orange-500/40">
-                    Nv. {parsedPromoLevel}
-                  </span>
-                </div>
-
-                <input
-                  id="promoLevelInputEl"
-                  type="text"
-                  value={promoLevelInput}
-                  onChange={(e) => updatePromoLevel(e.target.value)}
-                  placeholder="Ex: 10, 30, 75"
-                  className="w-full bg-zinc-900 border border-orange-500/40 rounded-xl px-3 py-2 text-sm text-white font-mono focus:border-orange-400 focus:outline-none"
-                />
-
-                <div className="flex gap-1.5 flex-wrap pt-0.5">
-                  {[1, 3, 8, 10, 20, 30, 40, 50, 70, 75, 100].map((lvl) => (
-                    <button
-                      key={lvl}
-                      onClick={() => updatePromoLevel(lvl)}
-                      className="px-2 py-1 rounded-lg bg-zinc-900 hover:bg-orange-900/40 text-[10px] text-zinc-300 border border-zinc-800 transition-colors"
-                    >
-                      Nv {lvl}
-                    </button>
-                  ))}
-                </div>
-
-                <input
-                  type="range"
-                  min="1"
-                  max={Math.max(75, Math.min(500, parsedPromoLevel > 75 ? parsedPromoLevel * 1.5 : 100))}
-                  value={Math.min(500, parsedPromoLevel)}
-                  onChange={(e) => updatePromoLevel(Number(e.target.value))}
-                  className="w-full h-2 rounded-lg bg-zinc-800 accent-orange-500 cursor-pointer mt-1"
-                />
-              </div>
-
-              {/* Grid dos 4 Poderes */}
-              <div className="grid grid-cols-2 gap-2 text-xs">
-                <div className="p-2.5 rounded-xl bg-zinc-950 border border-zinc-800">
-                  <span className="text-[10px] text-zinc-500 font-bold block">P1 (Ganho Mult)</span>
-                  <strong className="text-xs sm:text-sm text-orange-300 font-extrabold">+{p1.toFixed(2)}x</strong>
-                </div>
-
-                <div className="p-2.5 rounded-xl bg-zinc-950 border border-zinc-800">
-                  <span className="text-[10px] text-zinc-500 font-bold block">P2 (Voltas/s)</span>
-                  <strong className="text-xs sm:text-sm text-orange-300 font-extrabold">+{p2.toFixed(2)}x</strong>
-                </div>
-
-                <div className="p-2.5 rounded-xl bg-zinc-950 border border-zinc-800">
-                  <span className="text-[10px] text-zinc-500 font-bold block">P3 (Ascensão)</span>
-                  <strong className="text-xs sm:text-sm text-orange-300 font-extrabold">+{p3.toFixed(2)}x</strong>
-                </div>
-
-                <div className="p-2.5 rounded-xl bg-zinc-950 border border-zinc-800">
-                  <span className="text-[10px] text-zinc-500 font-bold block">P4 (Potência)</span>
-                  <strong className="text-xs sm:text-sm text-orange-300 font-extrabold">+{p4.toFixed(2)}x</strong>
-                </div>
-              </div>
-
-              {/* Rota Recomendada */}
-              <div className="p-3 bg-gradient-to-br from-orange-950/60 via-amber-950/40 to-zinc-950 rounded-xl border border-orange-500/30 text-[11px] text-zinc-300 space-y-0.5 font-sans">
-                <span className="font-extrabold text-orange-300 block">🎯 Rota Sugerida de Promoções:</span>
-                <p className="text-zinc-400 font-mono text-[10px]">
-                  #1 (Nv 3, 8, 20, 30 → 80) | #2 (Nv 10, 40) | #3 (Nv 30, 70) | #4 (Nv 50). Nivele todas em 75 antes do Infinito!
+              <div className="space-y-3">
+                <p className="text-zinc-300 leading-relaxed">
+                  O Prestígio é desbloqueado em <strong>10 Bilhões (1e10 Score)</strong>. Como ele reinicia todas as cores e ascensões, só vale a pena resetar quando o retorno for expressivo.
                 </p>
+
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 font-mono text-xs">
+                  <div className="p-3 rounded-2xl bg-zinc-950 border border-zinc-800 space-y-1">
+                    <span className="text-orange-400 font-bold block">1º Prestígio</span>
+                    <p className="text-zinc-400 font-sans text-[11px]">Faça assim que atingir entre <strong>10x e 20x P.Mult</strong>.</p>
+                  </div>
+                  <div className="p-3 rounded-2xl bg-zinc-950 border border-zinc-800 space-y-1">
+                    <span className="text-orange-400 font-bold block">Prestígios Seguintes</span>
+                    <p className="text-zinc-400 font-sans text-[11px]">Espere saltos de <strong>100x a 1.000x</strong> (10x → 1k → 100k → 1M).</p>
+                  </div>
+                  <div className="p-3 rounded-2xl bg-zinc-950 border border-orange-500/40 bg-orange-950/10 space-y-1">
+                    <span className="text-orange-300 font-bold block">Gatilho de Transição</span>
+                    <p className="text-zinc-400 font-sans text-[11px]">Ao bater <strong>1.000x P.Mult</strong>, pare e prepare seu 1º Promote.</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* ETAPA 3 */}
+            <div className="p-6 rounded-3xl bg-zinc-900/60 border border-zinc-800 space-y-4 relative overflow-hidden">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-zinc-800/80 pb-3">
+                <div className="flex items-center gap-3">
+                  <div className="w-8 h-8 rounded-xl bg-purple-950 border border-purple-500/40 text-purple-400 font-mono font-bold flex items-center justify-center text-sm shrink-0">
+                    3
+                  </div>
+                  <div>
+                    <h3 className="text-sm sm:text-base font-bold text-white">Etapa 3: O Motor de Promoções (1 a 4)</h3>
+                    <span className="text-[11px] text-zinc-400 font-mono">Foco: Evolução Permanente em 4 Categorias</span>
+                  </div>
+                </div>
+                <span className="px-2.5 py-1 rounded-full bg-zinc-950 border border-zinc-800 text-zinc-400 font-mono text-[11px] w-fit">
+                  Alvo: Promoções Nível ~75
+                </span>
+              </div>
+
+              <div className="space-y-3">
+                <p className="text-zinc-300 leading-relaxed">
+                  As Promoções guardam bônus permanentes. O primeiro promote deve ser obrigatoriamente na <strong>Promoção #1 (Mult Gain)</strong> ao alcançar ganho de ~x6 (Nível 3). Em seguida, siga o fluxo recomendado:
+                </p>
+
+                <div className="p-4 rounded-2xl bg-zinc-950 border border-purple-500/30 space-y-2.5 font-mono text-xs">
+                  <div className="text-purple-300 font-bold flex items-center gap-1.5">
+                    <Sparkles className="w-3.5 h-3.5" /> Sequência de Níveis Recomendada:
+                  </div>
+                  <div className="grid grid-cols-1 sm:grid-cols-4 gap-2 text-[11px]">
+                    <div className="p-2 rounded-xl bg-zinc-900 border border-zinc-800">
+                      <strong className="text-white block">#1 Mult Gain</strong>
+                      <span className="text-zinc-400">Nv. 3 → 8 → 20 → 30 → 80</span>
+                    </div>
+                    <div className="p-2 rounded-xl bg-zinc-900 border border-zinc-800">
+                      <strong className="text-white block">#2 Laps Speed</strong>
+                      <span className="text-zinc-400">Nv. 10 → 40 (Final)</span>
+                    </div>
+                    <div className="p-2 rounded-xl bg-zinc-900 border border-zinc-800">
+                      <strong className="text-white block">#3 Asc. Power</strong>
+                      <span className="text-zinc-400">Nv. 30 → 70 (Final)</span>
+                    </div>
+                    <div className="p-2 rounded-xl bg-zinc-900 border border-zinc-800">
+                      <strong className="text-white block">#4 Promo Power</strong>
+                      <span className="text-purple-300">Nv. 50 (Multiplica as 3)</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* ETAPA 4 */}
+            <div className="p-6 rounded-3xl bg-zinc-900/60 border border-zinc-800 space-y-4 relative overflow-hidden">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-zinc-800/80 pb-3">
+                <div className="flex items-center gap-3">
+                  <div className="w-8 h-8 rounded-xl bg-cyan-950 border border-cyan-500/40 text-cyan-400 font-mono font-bold flex items-center justify-center text-sm shrink-0">
+                    4
+                  </div>
+                  <div>
+                    <h3 className="text-sm sm:text-base font-bold text-white">Etapa 4: A Reta Final (O Primeiro Infinito)</h3>
+                    <span className="text-[11px] text-zinc-400 font-mono">Foco: Prestígio Final de 1e42 e Salto para 1.79e308</span>
+                  </div>
+                </div>
+                <span className="px-2.5 py-1 rounded-full bg-cyan-950 border border-cyan-500/40 text-cyan-300 font-mono text-[11px] font-bold w-fit">
+                  Meta: 1.79e308 Score ⵙ
+                </span>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                <div className="p-3.5 rounded-2xl bg-zinc-950 border border-zinc-800/80 space-y-1.5">
+                  <strong className="text-zinc-200 flex items-center gap-1.5 font-mono text-xs">
+                    <Target className="w-3.5 h-3.5 text-cyan-400" /> Checklist Antes do Salto:
+                  </strong>
+                  <ul className="text-zinc-400 space-y-1 text-[11px]">
+                    <li>• Todas as 4 promoções por volta do nível <strong>75 a 80</strong>.</li>
+                    <li>• Prestígio em cerca de <strong>1e42 (1 TDC) de P.Mult</strong>.</li>
+                    <li>• Deixe todas as cores produzindo no nível máximo.</li>
+                  </ul>
+                </div>
+
+                <div className="p-3.5 rounded-2xl bg-zinc-950 border border-cyan-500/30 space-y-1.5 bg-cyan-950/10">
+                  <strong className="text-cyan-300 flex items-center gap-1.5 font-mono text-xs">
+                    <Zap className="w-3.5 h-3.5 text-yellow-400" /> O Botão "Infinite":
+                  </strong>
+                  <p className="text-zinc-300 leading-relaxed text-[11px]">
+                    Ao bater <strong>1.79e308 Score ⵙ</strong>, o botão de <strong>Infinity</strong> aparecerá. Clique nele para realizar seu primeiro reset maior, ganhar seu <strong>1º Ponto de Infinito (IP)</strong> e desbloquear a aba <strong>Infinito (Automações & Geradores)</strong>!
+                  </p>
+                </div>
               </div>
             </div>
           </div>
         </div>
       )}
 
-      {/* ========================================================================= */}
-      {/* SUB-SEÇÃO 3: RECOMPENSAS DIÁRIAS & TABELA DE LÍDERES */}
-      {/* ========================================================================= */}
-      {subSection === "rewards" && (
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
-          {/* Recompensas Diárias (14 Dias) */}
-          <div className="lg:col-span-6 p-6 rounded-3xl bg-zinc-900/40 border border-zinc-800 space-y-4">
-            <div className="flex justify-between items-center border-b border-zinc-800 pb-3">
-              <h2 className="text-sm font-bold text-white flex items-center gap-2">
-                <Gift className="w-4 h-4 text-purple-400" /> Recompensas Diárias (Ciclo de 14 Dias)
-              </h2>
-              <span className="text-[11px] font-mono text-purple-300 bg-purple-950/40 px-2.5 py-0.5 rounded border border-purple-500/30">
-                Média: ~232 Almas/dia
-              </span>
+      {/* 3. GUIA DE AUTOMAÇÃO */}
+      {subSection === "automations" && (
+        <div className="space-y-6">
+          <div className="p-6 sm:p-8 rounded-3xl bg-gradient-to-br from-red-950/40 via-zinc-900/80 to-zinc-950 border-2 border-red-500/30 shadow-2xl space-y-4">
+            <h2 className="text-xl font-bold text-white flex items-center gap-2">
+              <Sliders className="w-5 h-5 text-red-400" /> Configurações Oficiais de Automação
+            </h2>
+            <p className="text-xs text-zinc-300 leading-relaxed">
+              Use estes parâmetros para garantir que suas corridas funcionem de forma otimizada e sem travamentos em cada fase.
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 font-mono text-xs">
+            <div className="p-5 rounded-3xl bg-zinc-900/50 border border-zinc-800 space-y-3">
+              <strong className="text-orange-300 block text-sm">Fase 1: Pré-Break Infinity</strong>
+              <div className="space-y-1.5 text-zinc-300 text-[11px]">
+                <div>• <strong>Auto Prestige:</strong> Min Exp: 0 | Min P.Mult: 1000 | Tempo: 0.20s</div>
+                <div>• <strong>Auto Promote:</strong> Ordem 2, 1, 3, 4 | +15 a +30 Níveis | Delay 1s</div>
+                <div>• <strong>Auto Infinity:</strong> 90% do pico de IP da corrida</div>
+              </div>
             </div>
 
-            <div className="p-4 rounded-2xl bg-zinc-950 border border-zinc-800/80 space-y-2 font-mono">
-              <div className="flex items-center justify-between text-xs">
-                <span className="text-zinc-400">Sequência Ativa: <strong className="text-purple-300">{streakDay} dias</strong></span>
-                <span className="text-emerald-400 font-bold">Bônus: +{streakBonus}% em Almas</span>
+            <div className="p-5 rounded-3xl bg-zinc-900/50 border border-zinc-800 space-y-3">
+              <strong className="text-emerald-300 block text-sm">Fase 2: Pós-10 Animais (Marco 4)</strong>
+              <div className="space-y-1.5 text-zinc-300 text-[11px]">
+                <div>• <strong>Auto Prestige:</strong> Min Exp: 0 | Min P.Mult: 1.01 | Tempo: 0s</div>
+                <div>• <strong>Auto Promote:</strong> +1 Nível | Delay 0s (Todas as 4 promoções)</div>
+                <div>• <strong>Auto Slowdown:</strong> 10 (Após Marco 4 de Animais + Desafio 2)</div>
               </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* 4. CONQUISTAS ESPECIAIS */}
+      {subSection === "achievements" && (
+        <div className="space-y-6">
+          <div className="p-6 sm:p-8 rounded-3xl bg-gradient-to-br from-amber-950/40 via-zinc-900/80 to-zinc-950 border-2 border-amber-500/30 shadow-2xl space-y-3">
+            <h2 className="text-xl font-bold text-white flex items-center gap-2">
+              <Trophy className="w-5 h-5 text-amber-400" /> Conquistas Críticas Fora da Rota Normal
+            </h2>
+            <p className="text-xs text-zinc-300">
+              Conclua estas conquistas manualmente para não travar em paredes de progressão futuras.
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3 font-mono text-xs">
+            {SPECIAL_ACHIEVEMENTS.map((ach) => {
+              const isDone = !!completedTasks[ach.id];
+              return (
+                <button
+                  key={ach.id}
+                  onClick={() => toggleTask(ach.id)}
+                  className={`p-4 rounded-2xl border text-left flex items-start gap-3 transition-all ${
+                    isDone ? "bg-amber-950/30 border-amber-500/40 text-zinc-400" : "bg-zinc-950 border-zinc-800 text-zinc-200"
+                  }`}
+                >
+                  <div className={`w-5 h-5 rounded flex items-center justify-center border shrink-0 mt-0.5 ${
+                    isDone ? "bg-amber-600 border-amber-500 text-white" : "border-zinc-700 bg-zinc-900"
+                  }`}>
+                    {isDone && <Check className="w-3.5 h-3.5" />}
+                  </div>
+                  <div>
+                    <strong className={`block text-xs ${isDone ? "text-amber-400 line-through" : "text-white"}`}>
+                      #{ach.num} - {ach.name}
+                    </strong>
+                    <p className="text-zinc-400 font-sans text-[11px] mt-1 leading-relaxed">{ach.desc}</p>
+                    <span className="text-emerald-400 text-[10px] block mt-1">Recompensa: {ach.reward}</span>
+                  </div>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
+      {/* 5. TIME FLUX & ALMAS */}
+      {subSection === "timeflux" && (
+        <div className="space-y-6">
+          <div className="p-6 sm:p-8 rounded-3xl bg-gradient-to-br from-purple-950/40 via-zinc-900/80 to-zinc-950 border-2 border-purple-500/30 shadow-2xl space-y-4">
+            <h2 className="text-xl font-bold text-white flex items-center gap-2">
+              <Clock className="w-5 h-5 text-purple-400" /> Guia Oficial de Time Flux (TF) & Almas
+            </h2>
+            <p className="text-xs text-zinc-300 leading-relaxed">
+              O Time Flux (TF) e Offline Flux (OF) aceleram o tempo de jogo. Entenda as regras de conversão e eficiência.
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 font-mono text-xs">
+            <div className="p-5 rounded-3xl bg-zinc-900/50 border border-zinc-800 space-y-2">
+              <strong className="text-purple-300 block text-sm">Regras de Conversão</strong>
+              <p className="text-zinc-400 font-sans text-[11px] leading-relaxed">
+                • <strong>Proporção TF:OF:</strong> 3:5 (1h de TF gera 1h40 de OF).<br />
+                • <strong>Velocidade de Jogo:</strong> 2x a 60x. Em velocidades altas, automações podem perder precisão.<br />
+                • <strong>Ganho de TF Online:</strong> Desbloqueado a partir do Nível 8 de Ganho de TF ao atingir 60:00 OF/h.
+              </p>
+            </div>
+
+            <div className="p-5 rounded-3xl bg-zinc-900/50 border border-zinc-800 space-y-2">
+              <strong className="text-amber-300 block text-sm">Prioridades da Loja de Almas</strong>
+              <p className="text-zinc-400 font-sans text-[11px] leading-relaxed">
+                • <strong>1. Time Flux Gain:</strong> O único recurso relevante em todas as fases do jogo.<br />
+                • <strong>2. Zodiac Slots & Macro Slots:</strong> Qualidade de vida essencial.<br />
+                • <strong>Cosméticos:</strong> Guarde suas Almas para skins se preferir!
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* 6. RECOMPENSAS DIÁRIAS */}
+      {subSection === "rewards" && (
+        <div className="max-w-4xl mx-auto space-y-6">
+          <div className="p-6 sm:p-8 rounded-3xl bg-gradient-to-br from-purple-950/40 via-zinc-900/80 to-zinc-950 border-2 border-purple-500/30 shadow-2xl space-y-5">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-purple-500/20 pb-4">
+              <div className="flex items-center gap-3">
+                <div className="w-12 h-12 rounded-2xl bg-purple-950 border border-purple-500/40 flex items-center justify-center text-purple-300 shrink-0">
+                  <Calendar className="w-6 h-6" />
+                </div>
+                <div>
+                  <span className="text-[10px] font-mono uppercase text-purple-400 font-bold tracking-wider">
+                    Ciclo Quinzenal • 14 Dias
+                  </span>
+                  <h2 className="text-xl sm:text-2xl font-black text-white">
+                    Calendário de Recompensas Diárias
+                  </h2>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-purple-950/60 border border-purple-500/40 text-purple-200 font-mono text-xs w-fit">
+                <Flame className="w-4 h-4 text-amber-400 animate-pulse" />
+                <span>Média: ~232 Almas / dia</span>
+              </div>
+            </div>
+
+            <div className="p-4 rounded-2xl bg-zinc-950/80 border border-zinc-800 space-y-3 font-mono">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1 text-xs">
+                <span className="text-zinc-300 font-bold flex items-center gap-1.5">
+                  <Flame className="w-4 h-4 text-amber-400" />
+                  Sequência Consecutiva de Login: <strong className="text-purple-300">{streakDay} Dias</strong>
+                </span>
+                <span className="text-emerald-400 font-bold text-xs bg-emerald-950/60 border border-emerald-500/30 px-2.5 py-0.5 rounded-lg w-fit">
+                  Bônus Ativo: +{streakBonus}% em Almas
+                </span>
+              </div>
+
               <input
                 type="range"
                 min="0"
                 max="10"
                 value={streakDay}
-                onChange={(e) => setStreakDay(Number(e.target.value))}
+                onChange={(e) => updateStat("streakDay", Number(e.target.value))}
                 className="w-full h-2 rounded-lg bg-zinc-800 accent-purple-500 cursor-pointer"
               />
-            </div>
 
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 font-mono text-xs max-h-64 overflow-y-auto pr-1">
-              {DAILY_REWARDS_DATA.map((r) => {
-                const isSouls = r.type === "souls";
-                const rawAmount = parseInt(r.reward.replace(/\D/g, ""), 10) || 0;
-                const boostedAmount = isSouls ? Math.round(rawAmount * (1 + streakBonus / 100)) : 0;
-
-                return (
-                  <div key={r.day} className="p-2.5 rounded-xl bg-zinc-950 border border-zinc-800 flex flex-col justify-between">
-                    <div className="text-[10px] text-zinc-500">Dia {r.day}</div>
-                    <div className={`font-bold text-[11px] mt-1 ${isSouls ? "text-purple-300" : "text-cyan-300"}`}>
-                      {isSouls && streakBonus > 0 ? `+${boostedAmount} Almas` : r.reward}
-                    </div>
-                  </div>
-                );
-              })}
+              <div className="flex justify-between text-[10px] text-zinc-500 font-mono pt-0.5">
+                <span>0 Dias (+0%)</span>
+                <span>5 Dias (+25%)</span>
+                <span>10 Dias (Cap Máximo: +50%)</span>
+              </div>
             </div>
           </div>
 
-          {/* Tabela de Líderes */}
-          <div className="lg:col-span-6 p-6 rounded-3xl bg-zinc-900/40 border border-zinc-800 space-y-4">
-            <div className="flex justify-between items-center border-b border-zinc-800 pb-3">
-              <h2 className="text-sm font-bold text-white flex items-center gap-2">
-                <Trophy className="w-4 h-4 text-yellow-400" /> Pontuação de Classificação (Ranking)
-              </h2>
-              <span className="text-[10px] font-mono text-zinc-400 bg-zinc-950 px-2 py-0.5 rounded border border-zinc-800">
-                Desbloqueio: 1M Score
-              </span>
-            </div>
+          <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-3 font-mono">
+            {DAILY_REWARDS_DATA.map((r) => {
+              const isSouls = r.type === "souls";
+              const rawAmount = parseInt(r.reward.replace(/\D/g, ""), 10) || 0;
+              const boostedAmount = isSouls ? Math.round(rawAmount * (1 + streakBonus / 100)) : 0;
+              const isGrandReward = r.day === 7 || r.day === 14;
 
-            <div className="p-4 rounded-2xl bg-zinc-950 border-2 border-yellow-500/30 flex items-center justify-between font-mono">
-              <span className="text-xs text-zinc-400 font-bold">Pontuação de Ranking Calculada:</span>
-              <strong className="text-lg text-yellow-400 font-black">
-                {formatScientific(calculatedLbScore)}
-              </strong>
-            </div>
+              return (
+                <div
+                  key={r.day}
+                  className={`p-3.5 rounded-2xl border flex flex-col justify-between transition-all duration-200 ${
+                    isGrandReward
+                      ? "bg-gradient-to-b from-purple-950/50 to-zinc-950 border-purple-500/50 shadow-lg shadow-purple-950/30"
+                      : "bg-zinc-950 border-zinc-800/90 hover:border-zinc-700"
+                  }`}
+                >
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-[10px] text-zinc-500 font-bold uppercase">
+                      Dia {r.day}
+                    </span>
+                    {isGrandReward && (
+                      <span className="text-[8px] font-bold px-1.5 py-0.2 rounded bg-amber-950 border border-amber-500/40 text-amber-300">
+                        MARCO
+                      </span>
+                    )}
+                  </div>
 
-            <div className="p-4 rounded-2xl bg-zinc-950 border border-zinc-800 text-[11px] text-zinc-400 space-y-1.5 leading-relaxed font-mono">
-              <div className="text-zinc-300 font-bold">Fatores que mais impulsionam o Ranking:</div>
-              <div>• <strong>Score Máximo & Exp:</strong> (1 + log10(1 + log10(Score))) × Exp</div>
-              <div>• <strong>Supernovas & Lab:</strong> (1 + SN/10)^0.6 × (1 + Lab/50)^0.35</div>
-              <div>• <strong>Zodíaco & Ataques:</strong> (1 + ZodiacLv/100) × (1 + log10(1 + AttackLv))</div>
-            </div>
+                  <div className="py-2">
+                    <div className="text-xl mb-1">
+                      {isSouls ? "🔮" : "⏳"}
+                    </div>
+                    <strong
+                      className={`text-xs sm:text-sm font-black block leading-tight ${
+                        isSouls ? "text-purple-300" : "text-cyan-300"
+                      }`}
+                    >
+                      {isSouls && streakBonus > 0 ? `+${boostedAmount}` : r.reward}
+                    </strong>
+                    <span className="text-[9px] text-zinc-500 block mt-0.5 uppercase">
+                      {isSouls ? "Almas (Souls)" : "Time Flux"}
+                    </span>
+                  </div>
+
+                  {isSouls && streakBonus > 0 && (
+                    <div className="pt-2 border-t border-zinc-800/80 text-[9px] text-emerald-400 font-bold flex items-center justify-between">
+                      <span>Base: {rawAmount}</span>
+                      <span>+{streakBonus}%</span>
+                    </div>
+                  )}
+                </div>
+              );
+            })}
           </div>
         </div>
       )}
