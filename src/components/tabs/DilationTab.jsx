@@ -1,7 +1,7 @@
 import React, { useState, useMemo } from "react";
 import { 
   Network, RefreshCw, Copy, CheckCheck, Table, AlertTriangle, 
-  Search, Zap, Layers, Info, CheckCircle2
+  Search, Zap, Layers, Info, CheckCircle2, Download
 } from "lucide-react";
 import { useGame } from "../../context/GameContext";
 import { 
@@ -17,6 +17,7 @@ export default function DilationTab() {
   const [copiedCode, setCopiedCode] = useState("");
   const [copiedCurrentTree, setCopiedCurrentTree] = useState(false);
   const [tableSearch, setTableSearch] = useState("");
+  const [customImportString, setCustomImportString] = useState("");
 
   const dtpAllocations = gameState.dilationTreeAllocations;
   const totalDtpSpent = Object.values(dtpAllocations).reduce((a, b) => a + b, 0);
@@ -53,6 +54,13 @@ export default function DilationTab() {
     setTimeout(() => setCopiedCurrentTree(false), 2000);
   };
 
+  const handleCustomImport = (e) => {
+    e.preventDefault();
+    if (!customImportString.trim()) return;
+    applyDtpPreset(customImportString.trim());
+    setCustomImportString("");
+  };
+
   const renderNode = (id) => {
     const node = DILATION_TREE_UPGRADES_DICT[id];
     if (!node) {
@@ -82,7 +90,7 @@ export default function DilationTab() {
       <div className={`p-1.5 rounded-xl border flex flex-col justify-between shadow transition-all font-mono text-xs ${colorStyles}`}>
         <div className="flex items-center justify-between gap-1">
           <strong className="text-[10px] sm:text-[11px] font-black tracking-wider leading-none truncate">{node.name}</strong>
-          <span className="px-1 py-0.2 rounded bg-zinc-950/90 border border-zinc-700 text-[9px] font-bold shrink-0">
+          <span className="px-1 py-0.5 rounded bg-zinc-950/90 border border-zinc-700 text-[9px] font-bold shrink-0">
             {current}/{node.max}
           </span>
         </div>
@@ -126,7 +134,7 @@ export default function DilationTab() {
       {/* 0. O QUE É A DILATAÇÃO? */}
       {subSection === "overview" && (
         <div className="space-y-6">
-          <div className="p-6 sm:p-8 rounded-3xl bg-gradient-to-br from-cyan-950/40 via-zinc-900/80 to-zinc-950 border-2 border-cyan-500/30 shadow-2xl space-y-4">
+          <div className="p-6 sm:p-8 rounded-3xl bg-linear-to-br from-cyan-950/40 via-zinc-900/80 to-zinc-950 border-2 border-cyan-500/30 shadow-2xl space-y-4">
             <div className="flex items-center gap-3 border-b border-cyan-500/20 pb-3">
               <div className="w-10 h-10 rounded-2xl bg-cyan-950 border border-cyan-500/40 flex items-center justify-center text-cyan-300 font-black text-lg">
                 ◈
@@ -200,7 +208,7 @@ export default function DilationTab() {
       {/* 1. ÁRVORE ESPACIAL & BUILDS */}
       {subSection === "tree" && (
         <div className="space-y-6">
-          <div className="p-6 sm:p-8 rounded-3xl bg-gradient-to-br from-cyan-950/40 via-zinc-900/70 to-zinc-950 border-2 border-cyan-500/30 shadow-2xl space-y-4">
+          <div className="p-6 sm:p-8 rounded-3xl bg-linear-to-br from-cyan-950/40 via-zinc-900/70 to-zinc-950 border-2 border-cyan-500/30 shadow-2xl space-y-4">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-cyan-500/20 pb-4">
               <div>
                 <span className="text-xs font-mono uppercase text-cyan-400 font-bold tracking-wider">
@@ -283,7 +291,7 @@ export default function DilationTab() {
               </div>
 
               <div className="overflow-x-auto pb-1">
-                <div className="min-w-[480px] grid grid-cols-5 gap-1.5 p-2.5 rounded-2xl bg-zinc-950/90 border border-zinc-800/80">
+                <div className="min-w-120 grid grid-cols-5 gap-1.5 p-2.5 rounded-2xl bg-zinc-950/90 border border-zinc-800/80">
                   {renderNode("C-1")}
                   {renderNode("T-1")}
                   {renderNode("T-2")}
@@ -316,19 +324,37 @@ export default function DilationTab() {
                 </div>
               </div>
 
-              <div className="p-2.5 bg-zinc-950 rounded-xl border border-zinc-800 flex items-center justify-between gap-2 font-mono text-xs">
-                <div className="overflow-hidden truncate flex-1">
-                  <span className="text-zinc-500 text-[10px] block leading-none mb-0.5">String da Árvore Atual:</span>
-                  <strong className="text-cyan-300 text-[11px] select-all truncate block">{currentTreeCode}</strong>
+              <div className="space-y-2">
+                <div className="p-2.5 bg-zinc-950 rounded-xl border border-zinc-800 flex items-center justify-between gap-2 font-mono text-xs">
+                  <div className="overflow-hidden truncate flex-1">
+                    <span className="text-zinc-500 text-[10px] block leading-none mb-0.5">String da Árvore Atual:</span>
+                    <strong className="text-cyan-300 text-[11px] select-all truncate block">{currentTreeCode}</strong>
+                  </div>
+
+                  <button
+                    onClick={copyCurrentTreeToClipboard}
+                    className="px-3 py-1.5 rounded-lg bg-cyan-950 hover:bg-cyan-900 border border-cyan-500/40 text-cyan-300 font-bold text-[11px] flex items-center gap-1.5 transition-colors shrink-0"
+                  >
+                    {copiedCurrentTree ? <CheckCheck className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
+                    <span>{copiedCurrentTree ? "Copiado!" : "Copiar"}</span>
+                  </button>
                 </div>
 
-                <button
-                  onClick={copyCurrentTreeToClipboard}
-                  className="px-3 py-1.5 rounded-lg bg-cyan-950 hover:bg-cyan-900 border border-cyan-500/40 text-cyan-300 font-bold text-[11px] flex items-center gap-1.5 transition-colors shrink-0"
-                >
-                  {copiedCurrentTree ? <CheckCheck className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
-                  <span>{copiedCurrentTree ? "Copiado!" : "Copiar"}</span>
-                </button>
+                <form onSubmit={handleCustomImport} className="flex gap-2">
+                  <input
+                    type="text"
+                    value={customImportString}
+                    onChange={(e) => setCustomImportString(e.target.value)}
+                    placeholder="Importar preset (ex: C1;T1,1,0,0;M0,0,0,0;B0,0,0,0)"
+                    className="flex-1 bg-zinc-950 border border-zinc-800 rounded-xl px-3 py-1.5 text-xs text-white placeholder-zinc-500 font-mono focus:outline-none focus:border-cyan-500/50"
+                  />
+                  <button
+                    type="submit"
+                    className="px-3 py-1.5 rounded-xl bg-cyan-950 hover:bg-cyan-900 border border-cyan-500/40 text-cyan-300 font-mono text-xs font-bold flex items-center gap-1.5 transition-colors"
+                  >
+                    <Download className="w-3.5 h-3.5" /> Importar
+                  </button>
+                </form>
               </div>
             </div>
 
@@ -349,7 +375,7 @@ export default function DilationTab() {
                 </div>
               </div>
 
-              <div className="overflow-x-auto flex-1 max-h-[360px] scrollbar-thin scrollbar-thumb-zinc-800">
+              <div className="overflow-x-auto flex-1 max-h-90 scrollbar-thin scrollbar-thumb-zinc-800">
                 <table className="w-full text-left font-mono text-xs text-zinc-300">
                   <thead className="border-b border-zinc-800 text-zinc-500 uppercase text-[10px]">
                     <tr>
@@ -392,7 +418,6 @@ export default function DilationTab() {
       {subSection === "guide" && (
         <div className="space-y-6">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 font-sans text-xs">
-            {/* FASE 1 */}
             <div className="p-5 rounded-3xl bg-zinc-900/50 border border-zinc-800 space-y-2.5">
               <div className="flex items-center justify-between font-mono">
                 <span className="px-2.5 py-1 rounded-xl bg-cyan-950 border border-cyan-500/40 text-cyan-300 font-bold text-xs">
@@ -407,7 +432,6 @@ export default function DilationTab() {
               </p>
             </div>
 
-            {/* FASE 2 */}
             <div className="p-5 rounded-3xl bg-zinc-900/50 border border-zinc-800 space-y-2.5">
               <div className="flex items-center justify-between font-mono">
                 <span className="px-2.5 py-1 rounded-xl bg-cyan-950 border border-cyan-500/40 text-cyan-300 font-bold text-xs">
@@ -421,8 +445,7 @@ export default function DilationTab() {
               </p>
             </div>
 
-            {/* FASE 3 */}
-            <div className="p-5 rounded-3xl bg-zinc-900/50 border border-zinc-800 space-y-2.5">
+            <div className="p-5 rounded-3xl border border-yellow-500/40 bg-yellow-950/10 space-y-2.5">
               <div className="flex items-center justify-between font-mono">
                 <span className="px-2.5 py-1 rounded-xl bg-yellow-950 border border-yellow-500/40 text-yellow-300 font-bold text-xs">
                   Fase 3: O Desafio EC10 (Multiplicadores de DP)
@@ -436,7 +459,6 @@ export default function DilationTab() {
               </p>
             </div>
 
-            {/* FASE 4 */}
             <div className="p-5 rounded-3xl bg-zinc-900/50 border border-zinc-800 space-y-2.5">
               <div className="flex items-center justify-between font-mono">
                 <span className="px-2.5 py-1 rounded-xl bg-emerald-950 border border-emerald-500/40 text-emerald-300 font-bold text-xs">
@@ -500,7 +522,7 @@ export default function DilationTab() {
       {/* 3. RUMO À UNIDADE */}
       {subSection === "unity_prep" && (
         <div className="space-y-6">
-          <div className="p-6 rounded-3xl bg-gradient-to-br from-purple-950/40 via-zinc-900/70 to-zinc-950 border-2 border-purple-500/30 shadow-2xl space-y-4">
+          <div className="p-6 rounded-3xl bg-linear-to-br from-purple-950/40 via-zinc-900/70 to-zinc-950 border-2 border-purple-500/30 shadow-2xl space-y-4">
             <div className="flex items-center justify-between border-b border-purple-500/20 pb-3">
               <h3 className="text-sm sm:text-base font-bold text-white flex items-center gap-2 font-mono">
                 <CheckCircle2 className="w-4 h-4 text-emerald-400" /> Checklist Obrigatório Antes de Unir (Unity)
@@ -526,7 +548,7 @@ export default function DilationTab() {
                 <p className="text-zinc-400">Níveis altos de Supernova proporcionam bônus melhores na transição.</p>
               </div>
 
-              <div className="p-3.5 bg-zinc-950 rounded-2xl border border-amber-500/40 bg-amber-950/10 space-y-1">
+              <div className="p-3.5 rounded-2xl border border-amber-500/40 bg-amber-950/10 space-y-1">
                 <strong className="text-amber-300 block font-mono">🔥 1º Zodíaco OBRIGATÓRIO: ÁRIES!</strong>
                 <p className="text-zinc-300">Na 1ª Unidade, escolha exclusivamente <strong>ÁRIES</strong>. Ele garante bônus de Mult Gain e Common Exp essenciais para o recomeço.</p>
               </div>

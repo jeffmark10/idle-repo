@@ -38,7 +38,7 @@ export default function RevolutionTab() {
       {/* 1. MECÂNICAS BASE & CÍRCULOS */}
       {subSection === "circles" && (
         <div className="space-y-6">
-          <div className="p-6 sm:p-8 rounded-3xl bg-gradient-to-br from-red-950/40 via-zinc-900/80 to-zinc-950 border-2 border-red-500/30 shadow-2xl space-y-3">
+          <div className="p-6 sm:p-8 rounded-3xl bg-linear-to-br from-red-950/40 via-zinc-900/80 to-zinc-950 border-2 border-red-500/30 shadow-2xl space-y-3">
             <div className="flex items-center gap-3 border-b border-red-500/20 pb-3">
               <div className="w-10 h-10 rounded-2xl bg-red-950 border border-red-500/40 flex items-center justify-center text-red-400 font-black">
                 <CircleDot className="w-5 h-5" />
@@ -155,7 +155,7 @@ export default function RevolutionTab() {
                   {CIRCLES_DATA.map((c) => (
                     <tr key={c.name} className="hover:bg-zinc-800/30 transition-colors">
                       <td className={`py-2 font-bold ${c.color}`}>{c.name}</td>
-                      <td className="py-2 text-zinc-300">{c.initialCost >= 1e6 ? c.initialCost.toExponential(0) : c.initialCost.toLocaleString("pt-BR")} ⵙ</td>
+                      <td className="py-2 text-zinc-300">{c.initialCost >= 1e6 ? c.initialCost.toExponential(0) : c.initialCost.toLocaleString("pt-BR")} ⨀</td>
                       <td className="py-2 text-zinc-400">+{c.costMult.toFixed(2)}x (+0.1 p/ Ascensão)</td>
                       <td className="py-2 text-emerald-400">+{c.baseSpeed.toFixed(3)}/s</td>
                     </tr>
@@ -170,7 +170,7 @@ export default function RevolutionTab() {
       {/* 2. ROTEIRO PASSO A PASSO */}
       {subSection === "guide" && (
         <div className="space-y-6">
-          <div className="p-6 sm:p-8 rounded-3xl bg-gradient-to-br from-red-950/40 via-zinc-900/70 to-zinc-950 border-2 border-red-500/30 shadow-2xl space-y-4">
+          <div className="p-6 sm:p-8 rounded-3xl bg-linear-to-br from-red-950/40 via-zinc-900/70 to-zinc-950 border-2 border-red-500/30 shadow-2xl space-y-4">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-red-500/20 pb-4">
               <div>
                 <span className="text-xs font-mono uppercase text-red-400 font-bold tracking-wider">
@@ -269,7 +269,7 @@ export default function RevolutionTab() {
                     <span className="text-orange-400 font-bold block">Prestígios Seguintes</span>
                     <p className="text-zinc-400 font-sans text-[11px]">Espere saltos de <strong>100x a 1.000x</strong> (10x → 1k → 100k → 1M).</p>
                   </div>
-                  <div className="p-3 rounded-2xl bg-zinc-950 border border-orange-500/40 bg-orange-950/10 space-y-1">
+                  <div className="p-3 rounded-2xl border border-orange-500/40 bg-orange-950/10 space-y-1">
                     <span className="text-orange-300 font-bold block">Gatilho de Transição</span>
                     <p className="text-zinc-400 font-sans text-[11px]">Ao bater <strong>1.000x P.Mult</strong>, pare e prepare seu 1º Promote.</p>
                   </div>
@@ -354,7 +354,7 @@ export default function RevolutionTab() {
                   </ul>
                 </div>
 
-                <div className="p-3.5 rounded-2xl bg-zinc-950 border border-cyan-500/30 space-y-1.5 bg-cyan-950/10">
+                <div className="p-3.5 rounded-2xl border border-cyan-500/30 space-y-1.5 bg-cyan-950/10">
                   <strong className="text-cyan-300 flex items-center gap-1.5 font-mono text-xs">
                     <Zap className="w-3.5 h-3.5 text-yellow-400" /> O Botão "Infinite":
                   </strong>
@@ -371,7 +371,7 @@ export default function RevolutionTab() {
       {/* 3. GUIA DE AUTOMAÇÃO */}
       {subSection === "automations" && (
         <div className="space-y-6">
-          <div className="p-6 sm:p-8 rounded-3xl bg-gradient-to-br from-red-950/40 via-zinc-900/80 to-zinc-950 border-2 border-red-500/30 shadow-2xl space-y-4">
+          <div className="p-6 sm:p-8 rounded-3xl bg-linear-to-br from-red-950/40 via-zinc-900/80 to-zinc-950 border-2 border-red-500/30 shadow-2xl space-y-4">
             <h2 className="text-xl font-bold text-white flex items-center gap-2">
               <Sliders className="w-5 h-5 text-red-400" /> Configurações Oficiais de Automação
             </h2>
@@ -405,7 +405,7 @@ export default function RevolutionTab() {
       {/* 4. CONQUISTAS ESPECIAIS */}
       {subSection === "achievements" && (
         <div className="space-y-6">
-          <div className="p-6 sm:p-8 rounded-3xl bg-gradient-to-br from-amber-950/40 via-zinc-900/80 to-zinc-950 border-2 border-amber-500/30 shadow-2xl space-y-3">
+          <div className="p-6 sm:p-8 rounded-3xl bg-linear-to-br from-amber-950/40 via-zinc-900/80 to-zinc-950 border-2 border-amber-500/30 shadow-2xl space-y-3">
             <h2 className="text-xl font-bold text-white flex items-center gap-2">
               <Trophy className="w-5 h-5 text-amber-400" /> Conquistas Críticas Fora da Rota Normal
             </h2>
@@ -447,7 +447,7 @@ export default function RevolutionTab() {
       {/* 5. TIME FLUX & ALMAS */}
       {subSection === "timeflux" && (
         <div className="space-y-6">
-          <div className="p-6 sm:p-8 rounded-3xl bg-gradient-to-br from-purple-950/40 via-zinc-900/80 to-zinc-950 border-2 border-purple-500/30 shadow-2xl space-y-4">
+          <div className="p-6 sm:p-8 rounded-3xl bg-linear-to-br from-purple-950/40 via-zinc-900/80 to-zinc-950 border-2 border-purple-500/30 shadow-2xl space-y-4">
             <h2 className="text-xl font-bold text-white flex items-center gap-2">
               <Clock className="w-5 h-5 text-purple-400" /> Guia Oficial de Time Flux (TF) & Almas
             </h2>
@@ -481,7 +481,7 @@ export default function RevolutionTab() {
       {/* 6. RECOMPENSAS DIÁRIAS */}
       {subSection === "rewards" && (
         <div className="max-w-4xl mx-auto space-y-6">
-          <div className="p-6 sm:p-8 rounded-3xl bg-gradient-to-br from-purple-950/40 via-zinc-900/80 to-zinc-950 border-2 border-purple-500/30 shadow-2xl space-y-5">
+          <div className="p-6 sm:p-8 rounded-3xl bg-linear-to-br from-purple-950/40 via-zinc-900/80 to-zinc-950 border-2 border-purple-500/30 shadow-2xl space-y-5">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-purple-500/20 pb-4">
               <div className="flex items-center gap-3">
                 <div className="w-12 h-12 rounded-2xl bg-purple-950 border border-purple-500/40 flex items-center justify-center text-purple-300 shrink-0">
@@ -543,7 +543,7 @@ export default function RevolutionTab() {
                   key={r.day}
                   className={`p-3.5 rounded-2xl border flex flex-col justify-between transition-all duration-200 ${
                     isGrandReward
-                      ? "bg-gradient-to-b from-purple-950/50 to-zinc-950 border-purple-500/50 shadow-lg shadow-purple-950/30"
+                      ? "bg-linear-to-b from-purple-950/50 to-zinc-950 border-purple-500/50 shadow-lg shadow-purple-950/30"
                       : "bg-zinc-950 border-zinc-800/90 hover:border-zinc-700"
                   }`}
                 >
@@ -552,7 +552,7 @@ export default function RevolutionTab() {
                       Dia {r.day}
                     </span>
                     {isGrandReward && (
-                      <span className="text-[8px] font-bold px-1.5 py-0.2 rounded bg-amber-950 border border-amber-500/40 text-amber-300">
+                      <span className="text-[8px] font-bold px-1.5 py-0.5 rounded bg-amber-950 border border-amber-500/40 text-amber-300">
                         MARCO
                       </span>
                     )}

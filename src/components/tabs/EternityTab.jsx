@@ -175,11 +175,11 @@ export default function EternityTab() {
   const completedTasks = gameState.completedTasks || {};
 
   const totalEmCompleted = useMemo(() => {
-    return ETERNITY_MILESTONES.filter(m => !completedTasks[m.id]).length;
+    return ETERNITY_MILESTONES.filter(m => !!completedTasks[m.id]).length;
   }, [completedTasks]);
 
   const totalAmCompleted = useMemo(() => {
-    return ANIMAL_MILESTONES.filter(m => !completedTasks[m.id]).length;
+    return ANIMAL_MILESTONES.filter(m => !!completedTasks[m.id]).length;
   }, [completedTasks]);
 
   const totalEcCompleted = useMemo(() => {
@@ -207,7 +207,7 @@ export default function EternityTab() {
       {/* 0. O QUE É A ETERNIDADE? */}
       {subSection === "overview" && (
         <div className="space-y-6">
-          <div className="p-6 sm:p-8 rounded-3xl bg-gradient-to-br from-indigo-950/40 via-zinc-900/80 to-zinc-950 border-2 border-indigo-500/30 shadow-2xl space-y-4">
+          <div className="p-6 sm:p-8 rounded-3xl bg-linear-to-br from-indigo-950/40 via-zinc-900/80 to-zinc-950 border-2 border-indigo-500/30 shadow-2xl space-y-4">
             <div className="flex items-center gap-3 border-b border-indigo-500/20 pb-3">
               <div className="w-10 h-10 rounded-2xl bg-indigo-950 border border-indigo-500/40 flex items-center justify-center text-indigo-300 font-black text-lg">
                 ⧖
@@ -361,7 +361,7 @@ export default function EternityTab() {
 
                 <div className="space-y-2">
                   {ANIMAL_MILESTONES.map((am) => {
-                    const isDone = !completedTasks[am.id];
+                    const isDone = !!completedTasks[am.id];
                     return (
                       <button
                         key={am.id}
@@ -482,7 +482,7 @@ export default function EternityTab() {
               <strong className="text-amber-300 text-sm font-black">+0.10x / SN</strong>
             </div>
 
-            <div className="p-4 rounded-2xl bg-zinc-950 border border-emerald-500/40 text-center space-y-1 bg-emerald-950/10">
+            <div className="p-4 rounded-2xl border border-emerald-500/40 text-center space-y-1 bg-emerald-950/10">
               <span className="text-[10px] text-emerald-400 uppercase font-bold block">Lab Base (+Lab)</span>
               <strong className="text-emerald-300 text-sm font-black">+20% / SN</strong>
             </div>
@@ -492,7 +492,7 @@ export default function EternityTab() {
               <strong className="text-amber-300 text-sm font-black">+2.0x / SN</strong>
             </div>
 
-            <div className="p-4 rounded-2xl bg-zinc-950 border border-purple-500/40 text-center space-y-1 bg-purple-950/10">
+            <div className="p-4 rounded-2xl border border-purple-500/40 text-center space-y-1 bg-purple-950/10">
               <span className="text-[10px] text-purple-400 uppercase font-bold block">+Animal Points</span>
               <strong className="text-purple-300 text-sm font-black">+5 AP / SN</strong>
             </div>
@@ -512,7 +512,7 @@ export default function EternityTab() {
         </div>
       )}
 
-      {/* 5. OS 50 DESAFIOS DA ETERNIDADE (EC 1-1 A EC 10-5) */}
+      {/* 5. OS 50 DESAFIOS DA ETERNIDADE */}
       {subSection === "challenges" && (
         <div className="space-y-6">
           <div className="p-6 rounded-3xl bg-zinc-900/40 border border-zinc-800 space-y-4">
@@ -554,7 +554,7 @@ export default function EternityTab() {
 
                 if (matchingTiers.length === 0) return null;
 
-                const completedCountForThisEc = ec.tiers.filter(t => !completedTasks[`EC${ec.num}-${t.tier}`]).length;
+                const completedCountForThisEc = ec.tiers.filter(t => !!completedTasks[`EC${ec.num}-${t.tier}`]).length;
 
                 return (
                   <div key={ec.num} className="p-5 rounded-3xl bg-zinc-900/40 border border-zinc-800 space-y-3">

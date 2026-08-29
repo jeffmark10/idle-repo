@@ -40,13 +40,15 @@ export function parseIncrementalNumber(input) {
   return { value: isNegative ? -finalValue : finalValue, isValid: true };
 }
 
-export function formatScientific(num) {
+export function formatScientific(num, decimals = 0) {
   if (num === Infinity || num === -Infinity || (typeof num === "number" && isNaN(num))) {
     return "∞ (Limite)";
   }
-  if (!num) return "0";
+  if (!num && num !== 0) return "0";
+  if (typeof num !== "number") num = Number(num) || 0;
+
   if (Math.abs(num) >= 1e6 || (Math.abs(num) > 0 && Math.abs(num) < 1e-3)) {
-    return num.toExponential(2).replace("+", "");
+    return num.toExponential(decimals).replace("+", "");
   }
-  return num.toLocaleString("pt-BR", { maximumFractionDigits: 2 });
+  return num.toLocaleString("pt-BR", { maximumFractionDigits: decimals });
 }

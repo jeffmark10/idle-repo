@@ -4,7 +4,7 @@ import { Sparkles, CheckCircle2, ShieldAlert } from "lucide-react";
 export default function ComingSoonTab() {
   return (
     <div className="space-y-6">
-      <div className="p-6 sm:p-8 rounded-3xl bg-gradient-to-br from-amber-950/40 via-zinc-900/80 to-zinc-950 border-2 border-amber-500/30 shadow-2xl space-y-4">
+      <div className="p-6 sm:p-8 rounded-3xl bg-linear-to-br from-amber-950/40 via-zinc-900/80 to-zinc-950 border-2 border-amber-500/30 shadow-2xl space-y-4">
         <div className="flex items-center gap-3 border-b border-amber-500/20 pb-3">
           <div className="w-10 h-10 rounded-2xl bg-amber-950 border border-amber-500/40 flex items-center justify-center text-amber-300 font-black text-lg">
             ☯

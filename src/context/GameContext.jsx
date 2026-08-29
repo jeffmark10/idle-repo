@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect, useRef } from "react";
+import React, { createContext, useContext, useState, useEffect, useRef, useCallback, useMemo } from "react";
 
 const GameContext = createContext();
 const STORAGE_KEY = "REVOLUTION_IDLE_GLOBAL_STATE_V3";
@@ -56,29 +56,24 @@ export function GameProvider({ children }) {
   useEffect(() => {
     if (!gameState.profile.autoSave) return;
 
-    if (saveTimeoutRef.current) {
-      clearTimeout(saveTimeoutRef.current);
-    }
-
+    if (saveTimeoutRef.current) clearTimeout(saveTimeoutRef.current);
     saveTimeoutRef.current = setTimeout(() => {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(gameState));
     }, 400);
 
     return () => {
-      if (saveTimeoutRef.current) {
-        clearTimeout(saveTimeoutRef.current);
-      }
+      if (saveTimeoutRef.current) clearTimeout(saveTimeoutRef.current);
     };
   }, [gameState]);
 
-  const updateStat = (key, value) => {
+  const updateStat = useCallback((key, value) => {
     setGameState(prev => ({
       ...prev,
       stats: { ...prev.stats, [key]: value }
     }));
-  };
+  }, []);
 
-  const updateNestedStat = (category, key, value) => {
+  const updateNestedStat = useCallback((category, key, value) => {
     setGameState(prev => ({
       ...prev,
       stats: {
@@ -86,16 +81,16 @@ export function GameProvider({ children }) {
         [category]: { ...prev.stats[category], [key]: value }
       }
     }));
-  };
+  }, []);
 
-  const toggleTask = (taskId) => {
+  const toggleTask = useCallback((taskId) => {
     setGameState(prev => ({
       ...prev,
       completedTasks: { ...prev.completedTasks, [taskId]: !prev.completedTasks[taskId] }
     }));
-  };
+  }, []);
 
-  const toggleFavoriteMacro = (macroId) => {
+  const toggleFavoriteMacro = useCallback((macroId) => {
     setGameState(prev => {
       const exists = prev.favoriteMacros.includes(macroId);
       return {
@@ -105,14 +100,13 @@ export function GameProvider({ children }) {
           : [...prev.favoriteMacros, macroId]
       };
     });
-  };
+  }, []);
 
-  const updateDtpAllocation = (nodeId, delta) => {
+  const updateDtpAllocation = useCallback((nodeId, delta) => {
     setGameState(prev => {
       const current = prev.dilationTreeAllocations[nodeId] || 0;
       const totalSpent = Object.values(prev.dilationTreeAllocations).reduce((a, b) => a + b, 0);
 
-      // Trava no teto máximo de 65 DTPs
       if (delta > 0 && totalSpent >= 65) return prev;
 
       const next = Math.max(0, Math.min(5, current + delta));
@@ -121,9 +115,10 @@ export function GameProvider({ children }) {
         dilationTreeAllocations: { ...prev.dilationTreeAllocations, [nodeId]: next }
       };
     });
-  };
+  }, []);
 
-  const applyDtpPreset = (presetCode) => {
+  const applyDtpPreset = useCallback((presetCode) => {
+    if (!presetCode || typeof presetCode !== "string") return;
     const parts = presetCode.split(";");
     const newAlloc = {};
     parts.forEach(p => {
@@ -143,43 +138,54 @@ export function GameProvider({ children }) {
       ...prev,
       dilationTreeAllocations: newAlloc
     }));
-  };
+  }, []);
 
-  const respecDilationTree = () => {
+  const respecDilationTree = useCallback(() => {
     setGameState(prev => ({
       ...prev,
       dilationTreeAllocations: { "C-1": 1 }
     }));
-  };
+  }, []);
 
-  const setCurrentTab = (tabId) => {
+  const setCurrentTab = useCallback((tabId) => {
     setGameState(prev => ({
       ...prev,
       profile: { ...prev.profile, currentTab: tabId }
     }));
-  };
+  }, []);
 
-  const resetAllData = () => {
+  const resetAllData = useCallback(() => {
     localStorage.removeItem(STORAGE_KEY);
     setGameState(INITIAL_STATE);
-  };
+  }, []);
+
+  const contextValue = useMemo(() => ({
+    gameState,
+    setGameState,
+    updateStat,
+    updateNestedStat,
+    toggleTask,
+    toggleFavoriteMacro,
+    updateDtpAllocation,
+    applyDtpPreset,
+    respecDilationTree,
+    setCurrentTab,
+    resetAllData
+  }), [
+    gameState,
+    updateStat,
+    updateNestedStat,
+    toggleTask,
+    toggleFavoriteMacro,
+    updateDtpAllocation,
+    applyDtpPreset,
+    respecDilationTree,
+    setCurrentTab,
+    resetAllData
+  ]);
 
   return (
-    <GameContext.Provider
-      value={{
-        gameState,
-        setGameState,
-        updateStat,
-        updateNestedStat,
-        toggleTask,
-        toggleFavoriteMacro,
-        updateDtpAllocation,
-        applyDtpPreset,
-        respecDilationTree,
-        setCurrentTab,
-        resetAllData
-      }}
-    >
+    <GameContext.Provider value={contextValue}>
       {children}
     </GameContext.Provider>
   );

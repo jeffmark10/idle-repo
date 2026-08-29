@@ -1,29 +1,44 @@
-import React, { useRef, useState, useEffect } from "react";
+import React, { useRef, useState, useEffect, useCallback } from "react";
 import { ChevronLeft, ChevronRight, Lock } from "lucide-react";
 
 export default function SubNavTabs({ 
   tabs = [], 
   activeTab, 
   onSelectTab, 
-  colorTheme = "purple" // "red" | "purple" | "indigo" | "cyan" | "emerald" | "amber"
+  colorTheme = "purple"
 }) {
   const scrollRef = useRef(null);
   const [canScrollLeft, setCanScrollLeft] = useState(false);
   const [canScrollRight, setCanScrollRight] = useState(false);
 
-  const checkScroll = () => {
+  const checkScroll = useCallback(() => {
     if (scrollRef.current) {
       const { scrollLeft, scrollWidth, clientWidth } = scrollRef.current;
       setCanScrollLeft(scrollLeft > 2);
       setCanScrollRight(scrollLeft + clientWidth < scrollWidth - 2);
     }
-  };
+  }, []);
 
   useEffect(() => {
     checkScroll();
+    const el = scrollRef.current;
+    if (!el) return;
+
+    const handleWheel = (e) => {
+      if (e.deltaY !== 0) {
+        e.preventDefault();
+        el.scrollLeft += e.deltaY;
+      }
+    };
+
+    el.addEventListener("wheel", handleWheel, { passive: false });
     window.addEventListener("resize", checkScroll);
-    return () => window.removeEventListener("resize", checkScroll);
-  }, [tabs]);
+
+    return () => {
+      el.removeEventListener("wheel", handleWheel);
+      window.removeEventListener("resize", checkScroll);
+    };
+  }, [tabs, checkScroll]);
 
   const scroll = (direction) => {
     if (scrollRef.current) {
@@ -59,7 +74,7 @@ export default function SubNavTabs({
         <button
           onClick={() => scroll("left")}
           aria-label="Rolar para a esquerda"
-          className="absolute left-0 z-20 h-full px-1.5 bg-gradient-to-r from-zinc-950 via-zinc-950/90 to-transparent flex items-center justify-center text-zinc-300 hover:text-white transition-opacity"
+          className="absolute left-0 z-20 h-full px-1.5 bg-linear-to-r from-zinc-950 via-zinc-950/90 to-transparent flex items-center justify-center text-zinc-300 hover:text-white transition-opacity"
         >
           <div className="p-1 rounded-lg bg-zinc-900 border border-zinc-700 shadow-md">
             <ChevronLeft className="w-4 h-4" />
@@ -71,10 +86,6 @@ export default function SubNavTabs({
         ref={scrollRef}
         onScroll={checkScroll}
         className="flex items-center gap-1.5 p-1.5 rounded-2xl bg-zinc-900/70 border border-zinc-800/90 overflow-x-auto scroll-smooth w-full font-mono text-xs no-scrollbar select-none"
-        style={{
-          scrollbarWidth: "none",
-          msOverflowStyle: "none",
-        }}
       >
         {tabs.map((tab) => {
           const Icon = tab.icon;
@@ -117,7 +128,7 @@ export default function SubNavTabs({
         <button
           onClick={() => scroll("right")}
           aria-label="Rolar para a direita"
-          className="absolute right-0 z-20 h-full px-1.5 bg-gradient-to-l from-zinc-950 via-zinc-950/90 to-transparent flex items-center justify-center text-zinc-300 hover:text-white transition-opacity"
+          className="absolute right-0 z-20 h-full px-1.5 bg-linear-to-l from-zinc-950 via-zinc-950/90 to-transparent flex items-center justify-center text-zinc-300 hover:text-white transition-opacity"
         >
           <div className="p-1 rounded-lg bg-zinc-900 border border-zinc-700 shadow-md">
             <ChevronRight className="w-4 h-4" />
